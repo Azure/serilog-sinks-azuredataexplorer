@@ -5,7 +5,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Serilog.Sinks.Azuredataexplorer</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPublishable>True</IsPublishable>
     <LangVersion>10.0</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>

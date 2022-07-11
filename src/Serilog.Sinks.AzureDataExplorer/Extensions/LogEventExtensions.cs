@@ -4,14 +4,14 @@ namespace Serilog.Sinks.Azuredataexplorer.Extensions
 {
     internal static class LogEventExtensions
     {
-        internal static string Json(this LogEvent logEvent, IFormatProvider? formatProvider = null)
+        internal static string Json(this LogEvent logEvent, IFormatProvider formatProvider = null)
         {
             return System.Text.Json.JsonSerializer.Serialize(ConvertToDictionary(logEvent, formatProvider));
         }
 
         internal static IDictionary<string, object> Dictionary(
             this LogEvent logEvent,
-            IFormatProvider? formatProvider = null)
+            IFormatProvider formatProvider = null)
         {
             return ConvertToDictionary(logEvent, formatProvider);
         }
@@ -21,16 +21,16 @@ namespace Serilog.Sinks.Azuredataexplorer.Extensions
             return System.Text.Json.JsonSerializer.Serialize(ConvertToDictionary(properties));
         }
 
-        internal static IDictionary<string, object?> Dictionary(this IReadOnlyDictionary<string, LogEventPropertyValue> properties)
+        internal static IDictionary<string, object> Dictionary(this IReadOnlyDictionary<string, LogEventPropertyValue> properties)
         {
             return ConvertToDictionary(properties);
         }
 
         #region Private implementation
 
-        private static IDictionary<string, object?> ConvertToDictionary(IReadOnlyDictionary<string, LogEventPropertyValue> properties)
+        private static IDictionary<string, object> ConvertToDictionary(IReadOnlyDictionary<string, LogEventPropertyValue> properties)
         {
-            var expObject = new Dictionary<string, object?>(properties.Count);
+            var expObject = new Dictionary<string, object>(properties.Count);
             foreach (var property in properties)
             {
                 expObject.Add(property.Key, Simplify(property.Value));
@@ -41,7 +41,7 @@ namespace Serilog.Sinks.Azuredataexplorer.Extensions
 
         private static Dictionary<string, object> ConvertToDictionary(
             LogEvent logEvent,
-            IFormatProvider? formatProvider = null)
+            IFormatProvider formatProvider = null)
         {
             var eventObject = new Dictionary<string, object>(5);
 
@@ -56,7 +56,7 @@ namespace Serilog.Sinks.Azuredataexplorer.Extensions
             return eventObject;
         }
 
-        private static object? Simplify(LogEventPropertyValue data)
+        private static object Simplify(LogEventPropertyValue data)
         {
             if (data is ScalarValue value)
             {
@@ -66,7 +66,7 @@ namespace Serilog.Sinks.Azuredataexplorer.Extensions
             // ReSharper disable once SuspiciousTypeConversion.Global
             if (data is DictionaryValue dictValue)
             {
-                var expObject = new Dictionary<string, object?>(dictValue.Elements.Count);
+                var expObject = new Dictionary<string, object>(dictValue.Elements.Count);
                 foreach (var item in dictValue.Elements)
                 {
                     if (item.Key.Value is string key)
@@ -108,7 +108,7 @@ namespace Serilog.Sinks.Azuredataexplorer.Extensions
                         return null;
                     }
 
-                    return new Dictionary<string, object?>(1)
+                    return new Dictionary<string, object>(1)
                     {
                         { key!.ToString()!, Simplify(str.Properties[1].Value) }
                     };
