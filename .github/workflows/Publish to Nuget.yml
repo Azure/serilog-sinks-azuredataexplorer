@@ -22,7 +22,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Restore dependencies
-      run: dotnet restore Src/Serilog.Sinks.AzureDataExplorer.sln
+      run: dotnet restore $PWD
     - name: Build Release
       run: dotnet build Src/Serilog.Sinks.AzureDataExplorer.sln -c Release --no-restore
     - name: Push Signed to NuGet
