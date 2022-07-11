@@ -1,6 +1,6 @@
 # This is a basic workflow that is manually triggered
 
-name: Publish to Nuget
+name: Nuget
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
@@ -21,12 +21,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
-    - name: Echo PWD
-      run: echo $PWD
-    - name: List files
-      run: ls
-    - name: List files2
-      run: ls $PWD
     - name: Restore dependencies
       run: dotnet restore src
     - name: Build Release
