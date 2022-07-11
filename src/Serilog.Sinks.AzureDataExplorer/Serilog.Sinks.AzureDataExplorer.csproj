@@ -19,6 +19,8 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
     <DelaySign>False</DelaySign>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
   </PropertyGroup>
     
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
