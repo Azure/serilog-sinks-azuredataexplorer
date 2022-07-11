@@ -28,10 +28,10 @@ jobs:
     - name: List files2
       run: ls $PWD
     - name: Restore dependencies
-      run: dotnet restore $PWD
+      run: dotnet restore src
     - name: Build Release
-      run: dotnet build Src/Serilog.Sinks.AzureDataExplorer.sln -c Release --no-restore
+      run: dotnet build src -c Release --no-restore
     - name: Push Signed to NuGet
       run: |
-        dotnet pack Src/Serilog.Sinks.AzureDataExplorer/ -c Release -o $PWD/Release/nuget
+        dotnet pack src/Serilog.Sinks.AzureDataExplorer/ -c Release -o $PWD/Release/nuget
         for file in Release/nuget/*.nupkg; do dotnet nuget push -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_API_KEY}} $file; done
