@@ -30,12 +30,12 @@ var log = new LoggerConfiguration()
 
 ### Features
 
-* Queued/Streaming ingestion
+* Supports both Queued and Streaming ingestion
+* Supports [Data Mappings](https://docs.microsoft.com/en-us/azure/data-explorer/kusto/management/mappings)
+* Supports AAD user and applications authentication
 * Supports [Azure Data Explorer](https://docs.microsoft.com/en-us/azure/data-explorer),
   [Azure Synapse Data Explorer](https://docs.microsoft.com/en-us/azure/synapse-analytics/data-explorer/data-explorer-overview) and
-  [Azure Data Explerere Free-Tier](https://docs.microsoft.com/en-us/azure/data-explorer/start-for-free)
-* Supprots [Data Mappings](https://docs.microsoft.com/en-us/azure/data-explorer/kusto/management/mappings)
-* Suppots AAD user and applications authentication
+  [Azure Data Explorer Free-Tier](https://docs.microsoft.com/en-us/azure/data-explorer/start-for-free)
 
 ### Options
 
