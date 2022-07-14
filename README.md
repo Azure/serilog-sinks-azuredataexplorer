@@ -66,7 +66,7 @@ By default, the sink uses the following data mapping:
 | Exception   | string      | $.Exception  |
 | Properties  | dynamic     | $.Properties |
 
-This mapping can be overriden using the following options:
+This mapping can be overridden using the following options:
 
 * MappingName: Use a data mapping configured in ADX.
 * ColumnsMapping: Use an ingestion-time data mapping.
@@ -80,13 +80,13 @@ new AzureDataExplorerSinkOptions()
     .WithXXX(...)
 ```
 
-| Mode | Method | Notes |
-|---|---|---|
-| AadUserPrompt | WithAadUserPrompt | **Recommended only development!** |
-| AadUserToken | WithAadUserToken | |
-| AadApplicationCertificate | WithAadApplicationCertificate ||
-| AadApplicationKey | WithAadApplicationKey ||
-| AadApplicationSubjectName | WithAadApplicationSubjectName ||
-| AadApplicationThumbprint | WithAadApplicationThumbprint ||
-| AadApplicationToken | WithAadApplicationToken ||
-| AadAzureTokenCredentials | WithAadAzureTokenCredentials ||
+| Mode                      | Method                        | Notes                             |
+|---------------------------|-------------------------------|-----------------------------------|
+| AadUserPrompt             | WithAadUserPrompt             | **Recommended only development!** |
+| AadUserToken              | WithAadUserToken              |                                   |
+| AadApplicationCertificate | WithAadApplicationCertificate |                                   |
+| AadApplicationKey         | WithAadApplicationKey         |                                   |
+| AadApplicationSubjectName | WithAadApplicationSubjectName |                                   |
+| AadApplicationThumbprint  | WithAadApplicationThumbprint  |                                   |
+| AadApplicationToken       | WithAadApplicationToken       |                                   |
+| AadAzureTokenCredentials  | WithAadAzureTokenCredentials  |                                   |
