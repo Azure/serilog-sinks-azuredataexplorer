@@ -1,8 +1,7 @@
-﻿using Kusto.Data;
+﻿using System.IO.Compression;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.IO;
-using Newtonsoft.Json;
 using Serilog.Events;
 using Serilog.Sinks.Azuredataexplorer;
 using Serilog.Sinks.Azuredataexplorer.Extensions;
@@ -100,7 +99,8 @@ namespace Serilog.Sinks.AzureDataExplorer
                     },
                     new StreamSourceOptions
                     {
-                        LeaveOpen = false
+                        LeaveOpen = false,
+                        CompressionType = DataSourceCompressionType.GZip
                     }).ConfigureAwait(false);
             }
         }
@@ -114,9 +114,12 @@ namespace Serilog.Sinks.AzureDataExplorer
         {
             var stream = s_recyclableMemoryStreamManager.GetStream();
             {
-                foreach (var logEvent in batch)
+                using (GZipStream compressionStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(stream, logEvent.Dictionary(m_formatProvider));
+                    foreach (var logEvent in batch)
+                    {
+                        System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider));
+                    }
                 }
             }
 
