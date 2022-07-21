@@ -102,15 +102,6 @@ namespace Serilog.Sinks.AzureDataExplorer
                     {
                         LeaveOpen = false
                     }).ConfigureAwait(false);
-
-                //IEnumerable<IngestionStatus>? status;
-
-                //do
-                //{
-                //    status = result.GetIngestionStatusCollection();
-                //    await Task.Delay(5000).ConfigureAwait(false);
-                //}
-                //while (status.First().Status == Status.Queued);
             }
         }
 
@@ -119,30 +110,9 @@ namespace Serilog.Sinks.AzureDataExplorer
             return Task.CompletedTask;
         }
 
-        //private void CreateJsonMappingIfNotExists()
-        //{
-        //    var kcsb = new KustoConnectionStringBuilder(m_queryEndpointUri, m_databaseName)
-        //        .WithAadUserPromptAuthentication();
-        //    using (var adminClient = KustoClientFactory.CreateCslAdminProvider(kcsb))
-        //    {
-        //        var showMappingsCommand = CslCommandGenerator.GenerateTableJsonMappingsShowCommand(m_tableName);
-        //        var existingMappings = adminClient.ExecuteControlCommand<IngestionMappingShowCommandResult>(showMappingsCommand);
-
-        //        if (existingMappings.Any(m => string.Equals(m.Name, m_mappingName, StringComparison.Ordinal)))
-        //        {
-        //            return;
-        //        }
-
-        //        var createMappingCommand = CslCommandGenerator.GenerateTableMappingCreateCommand(Kusto.Data.Ingestion.IngestionMappingKind.Json, m_tableName, m_mappingName, s_defaultIngestionColumnMapping);
-        //        adminClient.ExecuteControlCommand(m_databaseName, createMappingCommand);
-        //    }
-        //}
-
         private Stream CreateStreamFromLogEvents(IEnumerable<LogEvent> batch)
         {
             var stream = s_recyclableMemoryStreamManager.GetStream();
-            //using (StreamWriter textWriter = new StreamWriter(stream, encoding, bufferSize, leaveOpen))
-            //using (JsonTextWriter jsonWriter = new JsonTextWriter(textWriter))
             {
                 foreach (var logEvent in batch)
                 {
