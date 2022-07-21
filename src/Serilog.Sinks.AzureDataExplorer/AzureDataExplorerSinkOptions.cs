@@ -12,12 +12,12 @@ namespace Serilog.Sinks.Azuredataexplorer
         private int m_queueSizeLimit;
 
         ///<summary>
-        /// The maximum number of events to post in a single batch. Defaults to 50.
+        /// The maximum number of events to post in a single batch. Defaults to 1000.
         /// </summary>
         public int BatchPostingLimit { get; set; }
 
         ///<summary>
-        /// The time to wait between checking for event batches. Defaults to 2 seconds.
+        /// The time to wait between checking for event batches. Defaults to 10 seconds.
         /// </summary>
         public TimeSpan Period { get; set; }
 
@@ -62,11 +62,9 @@ namespace Serilog.Sinks.Azuredataexplorer
 
         public AzureDataExplorerSinkOptions()
         {
-            Period = TimeSpan.FromSeconds(2);
-            BatchPostingLimit = 50;
-            QueueSizeLimit = 25000;
-
-            //ColumnsMapping = new List<SinkColumnMapping>(0);
+            Period = TimeSpan.FromSeconds(10);
+            BatchPostingLimit = 1000;
+            QueueSizeLimit = 100000;
         }
 
         public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority, bool sendX5c = false, string azureRegion = null)

@@ -41,8 +41,8 @@ var log = new LoggerConfiguration()
 
 ### Batching
 
-* BatchPostingLimit: The maximum number of events to post in a single batch. Defaults to 50.
-* Period: The time to wait between checking for event batches. Defaults to 2 seconds.
+* BatchPostingLimit: The maximum number of events to post in a single batch. Defaults to 1000.
+* Period: The time to wait between checking for event batches. Defaults to 10 seconds.
 * QueueSizeLimit: The maximum number of events that will be held in-memory while waiting to ship them to AzureDataExplorer. Beyond this limit, events will be dropped. The default is 100,000.
 
 ### Target ADX Cluster
