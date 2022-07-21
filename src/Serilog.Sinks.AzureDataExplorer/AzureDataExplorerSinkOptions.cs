@@ -36,16 +36,38 @@ namespace Serilog.Sinks.Azuredataexplorer
             }
         }
 
+        /// <summary>
+        /// Azure Data Explorer endpoint (Ingestion endpoint for Queued Ingestion, Query endpoint for Streaming Ingestion)
+        /// </summary>
         public string IngestionEndpointUri { get; set; }
+
+        /// <summary>
+        /// The name of the database to which data should be ingested to
+        /// </summary>
         public string DatabaseName { get; set; }
+        
+        /// <summary>
+        /// The name of the table to which data should be ingested to
+        /// </summary>
         public string TableName { get; set; }
+
+        /// <summary>
+        /// The name of the (pre-created) data mapping to use for the ingested data
+        /// </summary>
         public string MappingName { get; set; }
 
+        /// <summary>
+        /// The explicit columns mapping to use for the ingested data
+        /// </summary>
+        public IEnumerable<SinkColumnMapping> ColumnsMapping { get; set; }
+        
         public IFormatProvider FormatProvider { get; set; }
 
-        public IEnumerable<SinkColumnMapping> ColumnsMapping { get; set; }
-
+        /// <summary>
+        /// Whether to use streaming ingestion (reduced latency, at the cost of reduced throughput) or queued ingestion (increased latency, but much higher throughput).
+        /// </summary>
         public bool UseStreamingIngestion { get; set; }
+
 
         public AuthenticationMode AuthenticationMode { get; private set; }
         public string UserToken { get; private set; }
@@ -67,6 +89,7 @@ namespace Serilog.Sinks.Azuredataexplorer
             QueueSizeLimit = 100000;
         }
 
+        #region Authentication builder methods
         public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority, bool sendX5c = false, string azureRegion = null)
         {
             AuthenticationMode = AuthenticationMode.AadApplicationCertificate;
@@ -133,6 +156,7 @@ namespace Serilog.Sinks.Azuredataexplorer
 
             return this;
         }
+        #endregion
     }
 
     public enum AuthenticationMode

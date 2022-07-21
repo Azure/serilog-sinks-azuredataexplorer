@@ -47,9 +47,9 @@ var log = new LoggerConfiguration()
 
 ### Target ADX Cluster
 
-* IngestionEndpointUri: Ingestion endpoint of the target ADX cluster.
-* DatabaseName: Database name where the events will be ingested.
-* TableName: Table name where the events will be ingested.
+* IngestionEndpointUri: Azure Data Explorer endpoint (Ingestion endpoint for Queued Ingestion, Query endpoint for Streaming Ingestion)
+* DatabaseName: The name of the database to which data should be ingested to
+* TableName: The name of the table to which data should be ingested to
 * UseStreamingIngestion: Whether to use streaming ingestion (reduced latency, at the cost of reduced throughput) or queued ingestion (increased latency, but much higher throughput).
 
 ### Mapping
