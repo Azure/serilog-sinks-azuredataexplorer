@@ -37,6 +37,9 @@ namespace Serilog.Sinks.Azuredataexplorer
                     break;
             }
 
+            kcsb.ApplicationNameForTracing = "Seriog.Sink.AzureDataExplorer";
+            kcsb.ClientVersionForTracing = typeof(AzureDataExplorerSinkOptionsExtensions).Assembly.GetName().Version.ToString();
+
             return kcsb;
         }
     }
