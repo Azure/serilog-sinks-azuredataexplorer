@@ -12,9 +12,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Samples
                 .WriteTo.Console()
                 .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                 {
-                    IngestionEndpointUri = "https://ingest-kvc1785e85a86e648f5ba0.northeurope.kusto.windows.net",
-                    DatabaseName = "MyDatabase",
-                    TableName = "Serilogs",
+                    IngestionEndpointUri = "<ADXIngestionURL>",
+                    DatabaseName = "<databaseName>",
+                    TableName = "<tableName>",
+                    bufferFileName = "<bufferFileName>",
 
                     ColumnsMapping = new[]
                     {
@@ -26,7 +27,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Samples
                         new SinkColumnMapping { ColumnName ="Position", ColumnType ="dynamic", ValuePath = "$.Properties.Position" } ,
                         new SinkColumnMapping { ColumnName ="Elapsed", ColumnType ="int", ValuePath = "$.Properties.Elapsed" } ,
                     }
-                })
+                }.WithAadApplicationKey("<appId>", "<appKey>", "<tenant>"))
                 .CreateLogger();
 
             var position = new { Latitude = 25, Longitude = 134 };
@@ -36,6 +37,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Samples
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography.X509Certificates;
+using Serilog.Core;
 
 namespace Serilog.Sinks.Azuredataexplorer
 {
@@ -45,7 +46,7 @@ namespace Serilog.Sinks.Azuredataexplorer
         /// The name of the database to which data should be ingested to
         /// </summary>
         public string DatabaseName { get; set; }
-        
+
         /// <summary>
         /// The name of the table to which data should be ingested to
         /// </summary>
@@ -60,13 +61,46 @@ namespace Serilog.Sinks.Azuredataexplorer
         /// The explicit columns mapping to use for the ingested data
         /// </summary>
         public IEnumerable<SinkColumnMapping> ColumnsMapping { get; set; }
-        
+
         public IFormatProvider FormatProvider { get; set; }
 
         /// <summary>
         /// Whether to use streaming ingestion (reduced latency, at the cost of reduced throughput) or queued ingestion (increased latency, but much higher throughput).
         /// </summary>
         public bool UseStreamingIngestion { get; set; }
+
+        /// <summary>
+        /// Enables the durable mode. when specified, the logs are written to the bufferFileName first and then ingested to ADX
+        /// </summary>
+        public string bufferFileName { get; set; }
+
+        /// <summary>
+        /// specifies the output format for produced logs to be written to buffer file
+        /// </summary>
+        public string bufferFileOutputFormat { get; set; }
+
+        /// <summary>
+        /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Day"/>.
+        /// Less frequent intervals like <see cref="RollingInterval.Infinite"/>, <see cref="RollingInterval.Year"/>,
+        /// <see cref="RollingInterval.Month"/> are not supported.
+        /// </summary>
+        public RollingInterval bufferFileRollingInterval { get; set; }
+
+        /// <summary>
+        /// The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
+        /// </summary>
+        public long? bufferFileSizeLimitBytes { get; set; }
+
+        /// <summary>
+        /// A switch allowing the pass-through minimum level to be changed at runtime. 
+        /// </summary>
+        public LoggingLevelSwitch bufferFileLoggingLevelSwitch { get; set; }
+
+        /// <summary>
+        /// The maximum number of log files that will be retained,
+        /// including the current log file. For unlimited retention, pass null. The default is 31.
+        /// </summary>
+        public int? bufferFileCountLimit { get; set; }
 
 
         public AuthenticationMode AuthenticationMode { get; private set; }
@@ -84,9 +118,13 @@ namespace Serilog.Sinks.Azuredataexplorer
 
         public AzureDataExplorerSinkOptions()
         {
-            Period = TimeSpan.FromSeconds(10);
-            BatchPostingLimit = 1000;
-            QueueSizeLimit = 100000;
+            this.Period = TimeSpan.FromSeconds(10);
+            this.BatchPostingLimit = 1000;
+            this.QueueSizeLimit = 100000;
+            this.bufferFileRollingInterval = RollingInterval.Day;
+            this.bufferFileCountLimit = 31;
+            this.bufferFileSizeLimitBytes = 100L * 1024 * 1024;
+            this.bufferFileOutputFormat = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
         }
 
         #region Authentication builder methods

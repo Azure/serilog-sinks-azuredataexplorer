@@ -22,7 +22,6 @@ Improved options default values
     </PackageReleaseNotes>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
-    <DelaySign>False</DelaySign>
     <Version>1.0.2</Version>
     <AssemblyVersion>1.0.2.0</AssemblyVersion>
     <FileVersion>1.0.2.0</FileVersion>
@@ -33,6 +32,9 @@ Improved options default values
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Serilog.Sinks.File" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="$(PackageReadmeFile)" />
   </ItemGroup>
 
@@ -40,6 +42,7 @@ Improved options default values
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="10.0.3" />
     <PackageReference Include="serilog" Version="2.11.0" />
     <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

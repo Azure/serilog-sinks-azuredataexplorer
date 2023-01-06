@@ -1,7 +1,10 @@
 ﻿using System.IO.Compression;
+using System.Text;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.IO;
+using Serilog.Configuration;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Azuredataexplorer;
 using Serilog.Sinks.Azuredataexplorer.Extensions;
@@ -25,6 +28,9 @@ namespace Serilog.Sinks.AzureDataExplorer
         private readonly string m_databaseName;
         private readonly string m_tableName;
         private readonly string m_mappingName;
+        private readonly Logger m_sink;
+
+        private readonly bool isDurableMode;
 
         private readonly IngestionMapping m_ingestionMapping;
         //private KustoIngestionProperties m_kustoIngestionProperties;
@@ -72,6 +78,23 @@ namespace Serilog.Sinks.AzureDataExplorer
                 m_ingestionMapping.IngestionMappings = s_defaultIngestionColumnMapping;
             }
 
+            if (!string.IsNullOrEmpty(options.bufferFileName))
+            {
+                Path.GetFullPath(options.bufferFileName);     // validate path
+                isDurableMode = true;
+                m_sink = new LoggerConfiguration()
+                            .MinimumLevel.Verbose()
+                            .WriteTo.File(options.bufferFileName,
+                                outputTemplate: options.bufferFileOutputFormat,
+                                rollingInterval: options.bufferFileRollingInterval,
+                                fileSizeLimitBytes: options.bufferFileSizeLimitBytes,
+                                rollOnFileSizeLimit: true,
+                                retainedFileCountLimit: options.bufferFileCountLimit,
+                                levelSwitch: options.bufferFileLoggingLevelSwitch,
+                                encoding: Encoding.UTF8)
+                            .CreateLogger();
+            }
+
             var kcsb = options.GetKustoConnectionStringBuilder();
 
             if (options.UseStreamingIngestion)
@@ -86,6 +109,13 @@ namespace Serilog.Sinks.AzureDataExplorer
 
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
+            if (isDurableMode)
+            {
+                foreach (var logEvent in batch)
+                {
+                    m_sink.Write(logEvent);
+                }
+            }
             using (var dataStream = CreateStreamFromLogEvents(batch))
             {
                 var result = await m_queuedIngestClient.IngestFromStreamAsync(

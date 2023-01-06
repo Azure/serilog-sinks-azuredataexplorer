@@ -11,8 +11,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         public static LoggerConfiguration AzureDataExplorerSink(
             this LoggerSinkConfiguration loggerConfiguration,
             AzureDataExplorerSinkOptions options,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            LoggingLevelSwitch levelSwitch = null)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (loggerConfiguration == null)
             {
@@ -28,14 +27,14 @@ namespace Serilog.Sinks.AzureDataExplorer
                 BatchSizeLimit = options.BatchPostingLimit,
                 Period = options.Period,
                 EagerlyEmitFirstEvent = true,
-                QueueLimit = options.QueueSizeLimit                
+                QueueLimit = options.QueueSizeLimit
             };
 
             var azureDataExplorerSink = new AzureDataExplorerSink(options);
             var batchingSink = new PeriodicBatchingSink(azureDataExplorerSink, batchingOptions);
             return loggerConfiguration.Sink(batchingSink,
                 restrictedToMinimumLevel,
-                levelSwitch);
+                options.bufferFileLoggingLevelSwitch);
         }
     }
 }
