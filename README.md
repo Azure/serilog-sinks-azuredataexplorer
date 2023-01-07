@@ -17,6 +17,10 @@ Install-Package Serilog.Sinks.AzureDataExplorer
 
 ## How to use
 
+This sink supports the durable mode where the logs are written to a file first and then flushed to the specified ADX table. This durable mode prevents data loss when the ADX connection couldnt be established. Durable mode can be turned on when we specify the bufferFileName in the LoggerConfiguration as mentioned below.
+
+Configuration when durable mode is not required
+
 ```csharp
 var log = new LoggerConfiguration()
     .WriteTo.AzureDataExplorer(new AzureDataExplorerSinkOptions
@@ -28,10 +32,25 @@ var log = new LoggerConfiguration()
     .CreateLogger();
 ```
 
+Confguration when durable mode is required
+
+```csharp
+var log = new LoggerConfiguration()
+    .WriteTo.AzureDataExplorer(new AzureDataExplorerSinkOptions
+    {
+        IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
+        DatabaseName = "MyDatabase",
+        TableName = "Serilogs"
+        bufferFileName = "BufferFileName"
+    })
+    .CreateLogger();
+```
+
 ## Features
 
 * Supports both Queued and Streaming ingestion
 * Supports [Data Mappings](https://docs.microsoft.com/en-us/azure/data-explorer/kusto/management/mappings)
+* Supports durable mode where the log is written to a file first and then flushed to ADX Database
 * Supports AAD user and applications authentication
 * Supports [Azure Data Explorer](https://docs.microsoft.com/en-us/azure/data-explorer),
   [Azure Synapse Data Explorer](https://docs.microsoft.com/en-us/azure/synapse-analytics/data-explorer/data-explorer-overview) and
@@ -70,6 +89,23 @@ This mapping can be overridden using the following options:
 
 * MappingName: Use a data mapping configured in ADX.
 * ColumnsMapping: Use an ingestion-time data mapping.
+
+### Durable Mode
+
+Durable mode can be turned on when we specify the bufferFileName in the LoggerConfiguration. There are few other options available when the durable mode is enabled.
+
+* bufferFileName : Enables the durable mode. When specified, the logs are written to the bufferFileName first and then ingested to ADX.
+
+* bufferFileOutputFormat : specifies the output format for produced logs to be written to buffer file. Default when not specified - "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+
+* bufferFileRollingInterval : The interval at which buffer log files will roll over to a new file. The default is RollingInterval.Day
+
+* bufferFileSizeLimitBytes : The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
+
+* bufferFileLoggingLevelSwitch : A switch allowing the pass-through minimum level to be changed at runtime.
+
+* bufferFileCountLimit : The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.
+
 
 ### Authentication
 

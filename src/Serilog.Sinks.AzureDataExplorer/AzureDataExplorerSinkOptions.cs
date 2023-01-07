@@ -81,8 +81,6 @@ namespace Serilog.Sinks.Azuredataexplorer
 
         /// <summary>
         /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Day"/>.
-        /// Less frequent intervals like <see cref="RollingInterval.Infinite"/>, <see cref="RollingInterval.Year"/>,
-        /// <see cref="RollingInterval.Month"/> are not supported.
         /// </summary>
         public RollingInterval bufferFileRollingInterval { get; set; }
 

@@ -3,7 +3,6 @@ using System.Text;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.IO;
-using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Azuredataexplorer;
