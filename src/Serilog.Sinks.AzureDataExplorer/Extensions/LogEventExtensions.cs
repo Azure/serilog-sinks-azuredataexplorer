@@ -1,6 +1,6 @@
 ﻿using Serilog.Events;
 
-namespace Serilog.Sinks.Azuredataexplorer.Extensions
+namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
     internal static class LogEventExtensions
     {

@@ -1,7 +1,6 @@
 ﻿using Serilog.Configuration;
-using Serilog.Core;
 using Serilog.Events;
-using Serilog.Sinks.Azuredataexplorer;
+using Serilog.Sinks.AzureDataExplorer.Sinks;
 using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.AzureDataExplorer
@@ -34,7 +33,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             var batchingSink = new PeriodicBatchingSink(azureDataExplorerSink, batchingOptions);
             return loggerConfiguration.Sink(batchingSink,
                 restrictedToMinimumLevel,
-                options.bufferFileLoggingLevelSwitch);
+                options.BufferFileLoggingLevelSwitch);
         }
     }
 }

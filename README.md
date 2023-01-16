@@ -32,7 +32,7 @@ var log = new LoggerConfiguration()
     .CreateLogger();
 ```
 
-Confguration when durable mode is required
+Configuration when durable mode is required
 
 ```csharp
 var log = new LoggerConfiguration()
@@ -41,7 +41,7 @@ var log = new LoggerConfiguration()
         IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
         DatabaseName = "MyDatabase",
         TableName = "Serilogs"
-        bufferFileName = "BufferFileName"
+        BufferFileName = "BufferFileName"
     })
     .CreateLogger();
 ```
@@ -70,6 +70,7 @@ var log = new LoggerConfiguration()
 * DatabaseName: The name of the database to which data should be ingested to
 * TableName: The name of the table to which data should be ingested to
 * UseStreamingIngestion: Whether to use streaming ingestion (reduced latency, at the cost of reduced throughput) or queued ingestion (increased latency, but much higher throughput).
+* FlushImmediately : In case queued ingestion is selected, this property determines if is needed to flush the data immediately to ADX cluster. Not recommended to enable for data with higher workloads. The default is false.
 
 ### Mapping
 
@@ -94,18 +95,17 @@ This mapping can be overridden using the following options:
 
 Durable mode can be turned on when we specify the bufferFileName in the LoggerConfiguration. There are few other options available when the durable mode is enabled.
 
-* bufferFileName : Enables the durable mode. When specified, the logs are written to the bufferFileName first and then ingested to ADX.
+* BufferFileName : Enables the durable mode. When specified, the logs are written to the bufferFileName first and then ingested to ADX.
 
-* bufferFileOutputFormat : specifies the output format for produced logs to be written to buffer file. Default when not specified - "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+* BufferFileOutputFormat : specifies the output format for produced logs to be written to buffer file. Default when not specified - "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
 
-* bufferFileRollingInterval : The interval at which buffer log files will roll over to a new file. The default is RollingInterval.Day
+* BufferFileRollingInterval : The interval at which buffer log files will roll over to a new file. The default is RollingInterval.Day
 
-* bufferFileSizeLimitBytes : The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
+* BufferFileSizeLimitBytes : The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
 
-* bufferFileLoggingLevelSwitch : A switch allowing the pass-through minimum level to be changed at runtime.
+* BufferFileLoggingLevelSwitch : A switch allowing the pass-through minimum level to be changed at runtime.
 
-* bufferFileCountLimit : The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.
-
+* BufferFileCountLimit : The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.
 
 ### Authentication
 
@@ -126,3 +126,4 @@ new AzureDataExplorerSinkOptions()
 | AadApplicationThumbprint  | WithAadApplicationThumbprint  |                                   |
 | AadApplicationToken       | WithAadApplicationToken       |                                   |
 | AadAzureTokenCredentials  | WithAadAzureTokenCredentials  |                                   |
+| AadManagedIdentity        | WithAadUserManagedIdentity    |                                   |

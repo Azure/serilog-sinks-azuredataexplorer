@@ -1,4 +1,4 @@
-﻿using Serilog.Sinks.Azuredataexplorer;
+﻿
 
 namespace Serilog.Sinks.AzureDataExplorer.Samples
 {
@@ -15,7 +15,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Samples
                     IngestionEndpointUri = "<ADXIngestionURL>",
                     DatabaseName = "<databaseName>",
                     TableName = "<tableName>",
-                    bufferFileName = "<bufferFileName>",
+                    BufferFileName = "<bufferFileName>",
+                    FlushImmediately = true,
 
                     ColumnsMapping = new[]
                     {

@@ -1,20 +1,21 @@
 ﻿using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.IO;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Sinks.Azuredataexplorer;
-using Serilog.Sinks.Azuredataexplorer.Extensions;
+using Serilog.Sinks.AzureDataExplorer.Extensions;
 using Serilog.Sinks.PeriodicBatching;
 
-namespace Serilog.Sinks.AzureDataExplorer
+[assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests")]
+namespace Serilog.Sinks.AzureDataExplorer.Sinks
 {
     internal class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
     {
-        private static readonly RecyclableMemoryStreamManager s_recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
-        private static readonly List<ColumnMapping> s_defaultIngestionColumnMapping = new List<ColumnMapping>
+        private static readonly RecyclableMemoryStreamManager SRecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+        private static readonly List<ColumnMapping> SDefaultIngestionColumnMapping = new List<ColumnMapping>
         {
             new ColumnMapping { ColumnName = "Timestamp", ColumnType = "datetime", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Timestamp" } } },
             new ColumnMapping { ColumnName = "Level", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Level" } } },
@@ -26,17 +27,14 @@ namespace Serilog.Sinks.AzureDataExplorer
         private readonly IFormatProvider m_formatProvider;
         private readonly string m_databaseName;
         private readonly string m_tableName;
-        private readonly string m_mappingName;
         private readonly Logger m_sink;
-
-        private readonly bool isDurableMode;
-
+        private readonly string m_mappingName;
+        private readonly bool m_flushImmediately;
+        private readonly bool m_streamingIngestion;
+        private readonly bool m_durableMode;
         private readonly IngestionMapping m_ingestionMapping;
-        //private KustoIngestionProperties m_kustoIngestionProperties;
-        //private StreamSourceOptions m_streamSourceOptions;
-
-        private IKustoIngestClient m_queuedIngestClient;
-
+        private IKustoIngestClient m_ingestClient;
+        private IKustoQueuedIngestClient m_kustoQueuedIngestClient;
         private bool m_disposed;
 
         public AzureDataExplorerSink(AzureDataExplorerSinkOptions options)
@@ -62,6 +60,8 @@ namespace Serilog.Sinks.AzureDataExplorer
             m_databaseName = options.DatabaseName;
             m_tableName = options.TableName;
             m_mappingName = options.MappingName;
+            m_flushImmediately = options.FlushImmediately;
+            m_streamingIngestion = options.UseStreamingIngestion;
 
             m_ingestionMapping = new IngestionMapping();
             if (!string.IsNullOrEmpty(m_mappingName))
@@ -74,41 +74,42 @@ namespace Serilog.Sinks.AzureDataExplorer
             }
             else
             {
-                m_ingestionMapping.IngestionMappings = s_defaultIngestionColumnMapping;
+                m_ingestionMapping.IngestionMappings = SDefaultIngestionColumnMapping;
             }
 
-            if (!string.IsNullOrEmpty(options.bufferFileName))
+            if (!string.IsNullOrEmpty(options.BufferFileName))
             {
-                Path.GetFullPath(options.bufferFileName);     // validate path
-                isDurableMode = true;
+                Path.GetFullPath(options.BufferFileName); // validate path
+                m_durableMode = true;
                 m_sink = new LoggerConfiguration()
-                            .MinimumLevel.Verbose()
-                            .WriteTo.File(options.bufferFileName,
-                                outputTemplate: options.bufferFileOutputFormat,
-                                rollingInterval: options.bufferFileRollingInterval,
-                                fileSizeLimitBytes: options.bufferFileSizeLimitBytes,
-                                rollOnFileSizeLimit: true,
-                                retainedFileCountLimit: options.bufferFileCountLimit,
-                                levelSwitch: options.bufferFileLoggingLevelSwitch,
-                                encoding: Encoding.UTF8)
-                            .CreateLogger();
+                    .MinimumLevel.Verbose()
+                    .WriteTo.File(options.BufferFileName,
+                        outputTemplate: options.BufferFileOutputFormat,
+                        rollingInterval: options.BufferFileRollingInterval,
+                        fileSizeLimitBytes: options.BufferFileSizeLimitBytes,
+                        rollOnFileSizeLimit: true,
+                        retainedFileCountLimit: options.BufferFileCountLimit,
+                        levelSwitch: options.BufferFileLoggingLevelSwitch,
+                        encoding: Encoding.UTF8)
+                    .CreateLogger();
             }
 
             var kcsb = options.GetKustoConnectionStringBuilder();
+            var engineKcsb = options.GetKustoEngineConnectionStringBuilder();
 
             if (options.UseStreamingIngestion)
             {
-                m_queuedIngestClient = KustoIngestFactory.CreateStreamingIngestClient(kcsb);
+                m_ingestClient = KustoIngestFactory.CreateManagedStreamingIngestClient(engineKcsb, kcsb);
             }
             else
             {
-                m_queuedIngestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
+                m_kustoQueuedIngestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
             }
         }
 
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
-            if (isDurableMode)
+            if (m_durableMode)
             {
                 foreach (var logEvent in batch)
                 {
@@ -117,20 +118,41 @@ namespace Serilog.Sinks.AzureDataExplorer
             }
             using (var dataStream = CreateStreamFromLogEvents(batch))
             {
-                var result = await m_queuedIngestClient.IngestFromStreamAsync(
-                    dataStream,
-                    new KustoIngestionProperties
-                    {
-                        DatabaseName = m_databaseName,
-                        TableName = m_tableName,
-                        Format = DataSourceFormat.multijson,
-                        IngestionMapping = m_ingestionMapping
-                    },
-                    new StreamSourceOptions
-                    {
-                        LeaveOpen = false,
-                        CompressionType = DataSourceCompressionType.GZip
-                    }).ConfigureAwait(false);
+                if (!m_streamingIngestion)
+                {
+                    await m_kustoQueuedIngestClient.IngestFromStreamAsync(
+                        dataStream,
+                        new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
+                        {
+                            DatabaseName = m_databaseName,
+                            TableName = m_tableName,
+                            FlushImmediately = m_flushImmediately,
+                            Format = DataSourceFormat.multijson,
+                            IngestionMapping = m_ingestionMapping
+                        },
+                        new StreamSourceOptions
+                        {
+                            LeaveOpen = false,
+                            CompressionType = DataSourceCompressionType.GZip
+                        }).ConfigureAwait(false);
+                }
+                else
+                {
+                    await m_ingestClient.IngestFromStreamAsync(
+                        dataStream,
+                        new KustoIngestionProperties()
+                        {
+                            DatabaseName = m_databaseName,
+                            TableName = m_tableName,
+                            Format = DataSourceFormat.multijson,
+                            IngestionMapping = m_ingestionMapping
+                        },
+                        new StreamSourceOptions
+                        {
+                            LeaveOpen = false,
+                            CompressionType = DataSourceCompressionType.GZip
+                        }).ConfigureAwait(false);
+                }
             }
         }
 
@@ -141,7 +163,7 @@ namespace Serilog.Sinks.AzureDataExplorer
 
         private Stream CreateStreamFromLogEvents(IEnumerable<LogEvent> batch)
         {
-            var stream = s_recyclableMemoryStreamManager.GetStream();
+            var stream = SRecyclableMemoryStreamManager.GetStream();
             {
                 using (GZipStream compressionStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true))
                 {
@@ -172,8 +194,11 @@ namespace Serilog.Sinks.AzureDataExplorer
 
             if (disposing)
             {
-                m_queuedIngestClient?.Dispose();
-                m_queuedIngestClient = null;
+                m_ingestClient?.Dispose();
+                m_ingestClient = null;
+                
+                m_kustoQueuedIngestClient?.Dispose();
+                m_kustoQueuedIngestClient = null;
             }
 
             m_disposed = true;
