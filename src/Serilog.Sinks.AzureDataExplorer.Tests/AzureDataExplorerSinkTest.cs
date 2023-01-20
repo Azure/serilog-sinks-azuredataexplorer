@@ -79,62 +79,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
 
             // Assert
             Assert.NotNull(sink);
-            var fieldInfoMappingName =
-                sink.GetType().GetField("m_mappingName", BindingFlags.NonPublic | BindingFlags.Instance);
             var fieldInfoIngestionMapping = sink.GetType()
                 .GetField("m_ingestionMapping", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(fieldInfoIngestionMapping);
-        }
-
-        [Fact]
-        public void Test_constructor_should_set_columns_mapping_when_mapping_name_is_set()
-        {
-            // Arrange
-            var options = new AzureDataExplorerSinkOptions
-            {
-                DatabaseName = "db",
-                TableName = "table",
-                IngestionEndpointUri = "http://localhost",
-                MappingName = "mymapping"
-            };
-
-            // Act
-            var sink = new AzureDataExplorerSink(options);
-
-            // Assert
-            Assert.NotNull(sink);
-            var fieldInfoMappingName =
-                sink.GetType().GetField("m_mappingName", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(fieldInfoMappingName);
-            Assert.Equal(fieldInfoMappingName.GetValue(sink), "mymapping");
-        }
-
-        [Fact]
-        public void Test_constructor_should_set_log_sink_when_bufferFileName_is_set()
-        {
-            // Arrange
-            var options = new AzureDataExplorerSinkOptions
-            {
-                DatabaseName = "db",
-                TableName = "table",
-                IngestionEndpointUri = "http://localhost",
-                MappingName = "mymapping",
-                BufferFileName = "logTest.txt"
-            };
-            // Act
-            var sink = new AzureDataExplorerSink(options);
-
-            // Assert
-            Assert.NotNull(sink);
-            var mSinkFieldName = sink.GetType().GetField("m_sink", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(mSinkFieldName);
-            Assert.NotNull(mSinkFieldName.GetValue(sink));
-
-            var durableModeFieldName =
-                sink.GetType().GetField("m_durableMode", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(durableModeFieldName);
-            Assert.NotNull(durableModeFieldName.GetValue(sink));
-            Assert.True((bool?)durableModeFieldName.GetValue(sink));
         }
 
         [Fact]
@@ -179,7 +126,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             // Assert
             Assert.NotNull(sink);
             var ingestClientFieldName = sink.GetType()
-                .GetField("m_kustoQueuedIngestClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                .GetField("m_ingestClient", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(ingestClientFieldName);
             Assert.NotNull(ingestClientFieldName.GetValue(sink));
             Assert.IsAssignableFrom<IKustoQueuedIngestClient>(ingestClientFieldName.GetValue(sink));
@@ -194,7 +141,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
                 TableName = "table",
                 IngestionEndpointUri = "http://localhost",
                 UseStreamingIngestion = true,
-                BufferFileName = "logTest.txt"
             };
             var sink = new AzureDataExplorerSink(options);
 
@@ -209,10 +155,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             var batch = new List<LogEvent> { logEvent1 };
 
             Assert.NotNull(sink);
-            var mSinkFieldName = sink.GetType().GetField("m_sink", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(mSinkFieldName);
-            var m_sink = mSinkFieldName.GetValue(sink);
-            Assert.NotNull(m_sink);
 
             var ingestClientFieldName = sink.GetType()
                 .GetField("m_ingestClient", BindingFlags.NonPublic | BindingFlags.Instance);

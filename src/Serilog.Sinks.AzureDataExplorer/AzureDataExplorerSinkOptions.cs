@@ -5,11 +5,6 @@ namespace Serilog.Sinks.AzureDataExplorer
 {
     public class AzureDataExplorerSinkOptions
     {
-        public const string DefaultDatabaseName = "Diagnostics";
-        public const string DefaultTableName = "Logs";
-        public const string DefaultMappingName = "SerilogMapping";
-
-
         private int m_queueSizeLimit;
 
         ///<summary>
@@ -72,7 +67,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// <summary>
         /// Enables the durable mode. when specified, the logs are written to the bufferFileName first and then ingested to ADX
         /// </summary>
-        public string BufferFileName { get; set; }
+        public string BufferBaseFileName { get; set; }
 
         /// <summary>
         /// specifies the output format for produced logs to be written to buffer file
@@ -80,9 +75,19 @@ namespace Serilog.Sinks.AzureDataExplorer
         public string BufferFileOutputFormat { get; set; }
 
         /// <summary>
-        /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Day"/>.
+        /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Hour"/>.
         /// </summary>
         public RollingInterval BufferFileRollingInterval { get; set; }
+        
+        /// <summary>
+        /// The interval between checking the buffer files.
+        /// </summary>
+        public TimeSpan? BufferLogShippingInterval { get; set; }
+        
+        ///<summary>
+        /// The maximum length of a an event record to be sent. Defaults to: null (No Limit) only used in file buffer mode
+        /// </summary>
+        public long? SingleEventSizePostingLimit { get; set; }
 
         /// <summary>
         /// The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
@@ -124,7 +129,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             this.Period = TimeSpan.FromSeconds(10);
             this.BatchPostingLimit = 1000;
             this.QueueSizeLimit = 100000;
-            this.BufferFileRollingInterval = RollingInterval.Day;
+            this.BufferFileRollingInterval = RollingInterval.Hour;
             this.BufferFileCountLimit = 31;
             this.BufferFileSizeLimitBytes = 100L * 1024 * 1024;
             this.BufferFileOutputFormat =

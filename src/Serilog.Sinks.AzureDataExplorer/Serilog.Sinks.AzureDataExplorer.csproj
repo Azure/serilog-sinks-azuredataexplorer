@@ -41,8 +41,12 @@ Improved options default values
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.2.1" />
     <PackageReference Include="serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.1-dev-00944" />
+    <PackageReference Include="Serilog.Formatting.Compact.Reader" Version="2.0.0" />
     <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="System.IO" Version="4.3.0" />
+    <PackageReference Include="System.IO.FileSystem" Version="4.3.0" />
   </ItemGroup>
 
 </Project>

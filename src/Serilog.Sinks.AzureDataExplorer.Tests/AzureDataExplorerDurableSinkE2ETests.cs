@@ -15,17 +15,17 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests;
  * tenant : Authority
  * These E2E testcases are disabled by default,
  * to enable it
- * 1. please change the access specifier of this class (AzureDataExplorerSinkE2ETests) to public
+ * 1. please change the access specifier of this class (AzureDataExplorerDurableSinkE2ETests) to public
  * 2. remove the System.Diagnostics.CodeAnalysis.SuppressMessage
  */
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")] 
-internal class AzureDataExplorerSinkE2ETests : IDisposable
+internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
 {
-    private readonly string m_generatedBufferFileName;
+    private string m_bufferBaseFileName;
     private readonly string m_generatedTableName;
 
-    public AzureDataExplorerSinkE2ETests()
+    public AzureDataExplorerDurableSinkE2ETests()
     {
         Assert.NotNull(Environment.GetEnvironmentVariable("ingestionURI"));
         Assert.NotNull(Environment.GetEnvironmentVariable("databaseName"));
@@ -33,7 +33,7 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
         Assert.NotNull(Environment.GetEnvironmentVariable("appKey"));
         Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
 
-        m_generatedBufferFileName = "";
+        m_bufferBaseFileName = "";
         var randomInt = new Random().Next();
         m_generatedTableName = "Serilog_" + randomInt;
         var kcsb = new KustoConnectionStringBuilder(
@@ -63,72 +63,21 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
             kustoClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
                 enableStreamingIngestion);
         }
-
     }
 
     [Fact]
-    public async void Test_AzureDataExplorer_Serilog_Sink_Queued()
+    public async Task Test_AzureDataExplorer_Durable_SerilogSink_Queued()
     {
+        var randomInt = new Random().Next();
+        m_bufferBaseFileName = Directory.GetCurrentDirectory() +"/"+randomInt+ "/logger-buffer";
+        if (!Directory.Exists( Directory.GetCurrentDirectory() +"/"+randomInt))
+        {
+            Directory.CreateDirectory(Directory.GetCurrentDirectory() + "/" + randomInt);
+        }
+        var identifier = "Test_AzureDataExplorer_Durable_SerilogSink_Queued_Ingestion";
+
         using (var log = new LoggerConfiguration()
                    .MinimumLevel.Verbose()
-                   .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
-                   {
-                       IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
-                       DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
-                       TableName = m_generatedTableName,
-                       FlushImmediately = true,
-                       ColumnsMapping = new[]
-                       {
-                           new SinkColumnMapping
-                               { ColumnName = "Timestamp", ColumnType = "datetime", ValuePath = "$.Timestamp" },
-                           new SinkColumnMapping { ColumnName = "Level", ColumnType = "string", ValuePath = "$.Level" },
-                           new SinkColumnMapping
-                               { ColumnName = "Message", ColumnType = "string", ValuePath = "$.Message" },
-                           new SinkColumnMapping
-                               { ColumnName = "Exception", ColumnType = "string", ValuePath = "$.Exception" },
-                           new SinkColumnMapping
-                               { ColumnName = "Properties", ColumnType = "dynamic", ValuePath = "$.Properties" },
-                           new SinkColumnMapping
-                               { ColumnName = "Position", ColumnType = "dynamic", ValuePath = "$.Properties.Position" },
-                           new SinkColumnMapping
-                               { ColumnName = "Elapsed", ColumnType = "int", ValuePath = "$.Properties.Elapsed" },
-                       }
-                   }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                       Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
-                   .CreateLogger())
-        {
-            var position = new { Latitude = 25, Longitude = 134 };
-            var elapsedMs = 34;
-
-            var identifer = "Test_AzureDataExplorer_Serilog_Sink_Without_Buffer";
-            log.Verbose(identifer + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Error(identifer + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
-                elapsedMs);
-            log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Error(identifer + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
-                elapsedMs);
-            log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-        }
-
-        await Task.Delay(10000);
-
-        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx("Test_AzureDataExplorer_Serilog_Sink_Without_Buffer");
-        Assert.Equal(12, noOfRecordsIngested);
-    }
-
-    [Fact]
-    public async void test_AzureDataExplorer_Serilog_Sink_With_Streaming()
-    {
-        var identifer = "test_AzureDataExplorer_Serilog_Sink_With_Streaming";
-        using (var log = new LoggerConfiguration()
-                   .MinimumLevel.Information()
                    .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                    {
                        IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
@@ -136,7 +85,8 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
                        BatchPostingLimit = 10,
                        Period = TimeSpan.FromSeconds(5),
                        TableName = m_generatedTableName,
-                       UseStreamingIngestion = true,
+                       BufferBaseFileName = m_bufferBaseFileName,
+                       BufferFileRollingInterval = RollingInterval.Day,
                        FlushImmediately = true,
                        ColumnsMapping = new[]
                        {
@@ -161,33 +111,47 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
             
-            log.Verbose(identifer + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Error(identifer + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
+            log.Verbose(identifier + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Warning(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Error(identifier + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
                 elapsedMs);
-            log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Error(identifer + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
+            log.Debug(identifier + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
+            log.Verbose(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Warning(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Error(identifier + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
                 elapsedMs);
-            log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Debug(identifier + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
+            log.Verbose(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             
         }
 
         await Task.Delay(10000);
 
-        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifer);
-        Assert.Equal(7, noOfRecordsIngested);
+        int lineCount = 0;
+        foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() +"/"+randomInt, "*.clef"))
+        {
+            lineCount += System.IO.File.ReadLines(file).Count();
+        }
+        Assert.Equal(12, lineCount);
+
+        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifier);
+        Assert.Equal(12, noOfRecordsIngested);
     }
 
     [Fact]
-    public async void test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch()
+    public async void test_AzureDataExplorer_Serilog_Sink_With_Buffer_LogLevelSwitch()
     {
-        var identifer = "test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch";
+        const string identifier = "test_AzureDataExplorer_Serilog_Sink_With_Buffer_LogLevelSwitch";
+        var randomInt = new Random().Next();
+        m_bufferBaseFileName = Directory.GetCurrentDirectory() +"/"+randomInt+ "/logger-buffer";
+        if (!Directory.Exists( Directory.GetCurrentDirectory() +"/"+randomInt))
+        {
+            Directory.CreateDirectory(Directory.GetCurrentDirectory() + "/" + randomInt);
+        }
+
         using (var log = new LoggerConfiguration()
                    .MinimumLevel.Verbose()
                    .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
@@ -197,7 +161,7 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
                        Period = TimeSpan.FromMilliseconds(1000),
                        DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
                        TableName = m_generatedTableName,
-                       BufferBaseFileName = m_generatedBufferFileName,
+                       BufferBaseFileName = m_bufferBaseFileName,
                        BufferFileRollingInterval = RollingInterval.Day,
                        BufferFileLoggingLevelSwitch = new Core.LoggingLevelSwitch(Events.LogEventLevel.Error),
                        FlushImmediately = true,
@@ -223,28 +187,34 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
         {
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
-
             
-            log.Verbose(identifer + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Error(identifer + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
+            log.Verbose(identifier + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Warning(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Error(identifier + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
                 elapsedMs);
-            log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Error(identifer + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
+            log.Debug(identifier + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
+            log.Verbose(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Warning(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Error(identifier + "Exception occurred", "Zohar Processed {@Position} in {Elapsed:000} ms.", position,
                 elapsedMs);
-            log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Debug(identifier + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
+            log.Verbose(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+            log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
         }
 
         await Task.Delay(10000);
 
+        int lineCount = 0;
+        foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() +"/"+randomInt, "*.clef"))
+        {
+            lineCount += System.IO.File.ReadLines(file).Count();
+        }
+        Assert.Equal(2, lineCount);
+
         int noOfRecordsIngested =
-            GetNoOfRecordsIngestedInAdx(identifer);
+            GetNoOfRecordsIngestedInAdx(identifier);
         Assert.Equal(2, noOfRecordsIngested);
     }
 

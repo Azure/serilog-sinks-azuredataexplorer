@@ -1,6 +1,6 @@
 ﻿using Kusto.Data;
 
-namespace Serilog.Sinks.AzureDataExplorer
+namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
     internal static class AzureDataExplorerSinkOptionsExtensions
     {
@@ -17,7 +17,6 @@ namespace Serilog.Sinks.AzureDataExplorer
             var kcsb = new KustoConnectionStringBuilder(GetClusterUrl(options.IngestionEndpointUri),
                 options.DatabaseName);
             return GetKcsbWithAuthentication(kcsb, options);
-            ;
         }
 
         private static KustoConnectionStringBuilder GetKcsbWithAuthentication(KustoConnectionStringBuilder kcsb,

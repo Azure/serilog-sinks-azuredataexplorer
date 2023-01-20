@@ -1,4 +1,5 @@
 using Serilog.Configuration;
+using Serilog.Sinks.AzureDataExplorer.Extensions;
 
 namespace Serilog.Sinks.AzureDataExplorer.Tests;
 

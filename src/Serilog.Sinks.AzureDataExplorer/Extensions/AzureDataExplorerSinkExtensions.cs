@@ -1,9 +1,10 @@
 ﻿using Serilog.Configuration;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Sinks;
 using Serilog.Sinks.PeriodicBatching;
 
-namespace Serilog.Sinks.AzureDataExplorer
+namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
     public static class AzureDataExplorerSinkExtensions
     {
@@ -28,10 +29,12 @@ namespace Serilog.Sinks.AzureDataExplorer
                 EagerlyEmitFirstEvent = true,
                 QueueLimit = options.QueueSizeLimit
             };
-
+            
             var azureDataExplorerSink = new AzureDataExplorerSink(options);
             var batchingSink = new PeriodicBatchingSink(azureDataExplorerSink, batchingOptions);
-            return loggerConfiguration.Sink(batchingSink,
+
+            var sink = string.IsNullOrWhiteSpace(options.BufferBaseFileName) ? (ILogEventSink)batchingSink : new AzureDataExplorerDurableSink(options);
+            return loggerConfiguration.Sink(sink,
                 restrictedToMinimumLevel,
                 options.BufferFileLoggingLevelSwitch);
         }

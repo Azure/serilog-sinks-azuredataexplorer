@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
+using Serilog.Sinks.AzureDataExplorer.Extensions;
 
 namespace Serilog.Sinks.AzureDataExplorer.Tests;
 

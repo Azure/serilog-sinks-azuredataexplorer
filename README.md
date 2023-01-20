@@ -41,7 +41,7 @@ var log = new LoggerConfiguration()
         IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
         DatabaseName = "MyDatabase",
         TableName = "Serilogs"
-        BufferFileName = "BufferFileName"
+        BufferBaseFileName = "BufferBaseFileName"
     })
     .CreateLogger();
 ```
@@ -69,7 +69,6 @@ var log = new LoggerConfiguration()
 * IngestionEndpointUri: Azure Data Explorer endpoint (Ingestion endpoint for Queued Ingestion, Query endpoint for Streaming Ingestion)
 * DatabaseName: The name of the database to which data should be ingested to
 * TableName: The name of the table to which data should be ingested to
-* UseStreamingIngestion: Whether to use streaming ingestion (reduced latency, at the cost of reduced throughput) or queued ingestion (increased latency, but much higher throughput).
 * FlushImmediately : In case queued ingestion is selected, this property determines if is needed to flush the data immediately to ADX cluster. Not recommended to enable for data with higher workloads. The default is false.
 
 ### Mapping
@@ -95,11 +94,11 @@ This mapping can be overridden using the following options:
 
 Durable mode can be turned on when we specify the bufferFileName in the LoggerConfiguration. There are few other options available when the durable mode is enabled.
 
-* BufferFileName : Enables the durable mode. When specified, the logs are written to the bufferFileName first and then ingested to ADX.
+* BufferBaseFileName : Enables the durable mode. When specified, the logs are written to the bufferFileName first and then ingested to ADX.
 
-* BufferFileOutputFormat : specifies the output format for produced logs to be written to buffer file. Default when not specified - "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+* BufferFileRollingInterval : The interval at which buffer log files will roll over to a new file. The default is RollingInterval.Hour
 
-* BufferFileRollingInterval : The interval at which buffer log files will roll over to a new file. The default is RollingInterval.Day
+* BufferLogShippingInterval : The interval between checking the buffer files.
 
 * BufferFileSizeLimitBytes : The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
 
