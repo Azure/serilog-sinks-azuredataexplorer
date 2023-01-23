@@ -29,7 +29,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 EagerlyEmitFirstEvent = true,
                 QueueLimit = options.QueueSizeLimit
             };
-            
+
             var azureDataExplorerSink = new AzureDataExplorerSink(options);
             var batchingSink = new PeriodicBatchingSink(azureDataExplorerSink, batchingOptions);
 

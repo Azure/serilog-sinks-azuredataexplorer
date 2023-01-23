@@ -78,12 +78,12 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Hour"/>.
         /// </summary>
         public RollingInterval BufferFileRollingInterval { get; set; }
-        
+
         /// <summary>
         /// The interval between checking the buffer files.
         /// </summary>
         public TimeSpan? BufferLogShippingInterval { get; set; }
-        
+
         ///<summary>
         /// The maximum length of a an event record to be sent. Defaults to: null (No Limit) only used in file buffer mode
         /// </summary>
@@ -110,7 +110,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// The default is false.
         /// </summary>
         public bool FlushImmediately { get; set; }
-        
+
         public AuthenticationMode AuthenticationMode { get; private set; }
         public string UserToken { get; private set; }
         public string ApplicationToken { get; private set; }

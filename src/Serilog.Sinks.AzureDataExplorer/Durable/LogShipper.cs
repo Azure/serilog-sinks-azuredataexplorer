@@ -76,8 +76,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         /// <param name="databaseName"></param>
         /// <param name="tableName"></param>
         /// <param name="ingestionMapping"></param>
-        public LogShipper(            
-            string bufferBaseFilename,            
+        public LogShipper(
+            string bufferBaseFilename,
             int batchPostingLimit,
             TimeSpan period,
             long? eventBodyLimitBytes,
@@ -177,12 +177,12 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                         }
                         else
                         {
-                            payload = m_payloadReader.ReadPayload(m_batchPostingLimit, m_eventBodyLimitBytes, ref position, ref count,position.File);
+                            payload = m_payloadReader.ReadPayload(m_batchPostingLimit, m_eventBodyLimitBytes, ref position, ref count, position.File);
                         }
 
                         var stopWatch = Stopwatch.StartNew();
                         var fileIdentifier = Guid.NewGuid();
-                        
+
                         if (count > 0 || m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow)
                         {
                             IKustoIngestionResult result;
@@ -203,7 +203,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                         },
                                         new StreamSourceOptions
                                         {
-                                            LeaveOpen = false, 
+                                            LeaveOpen = false,
                                             CompressionType = DataSourceCompressionType.GZip,
                                             SourceId = fileIdentifier
                                         }).ConfigureAwait(false);
@@ -239,7 +239,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                             }
                             else
                             {
-                                m_connectionSchedule.MarkFailure();                               
+                                m_connectionSchedule.MarkFailure();
                                 if (m_bufferSizeLimitBytes.HasValue)
                                     m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
 
@@ -291,15 +291,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                 }
             }
         }
-        
-        void  DumpInvalidPayload(int statusCode,string resultContent, string payload)
-        {
-            var invalidPayloadFile = m_fileSet.MakeInvalidPayloadFilename(statusCode);            
-            SelfLog.WriteLine("ADX ingestion failed with {0}: {1}; dumping payload to {2}", statusCode,
-                resultContent, invalidPayloadFile);
-            var bytesToWrite = Encoding.UTF8.GetBytes(payload);
-            IOFile.WriteAllBytes(invalidPayloadFile, bytesToWrite);
-        }
 
         static bool FileIsUnlockedAndUnextended(FileSetPosition position)
         {
@@ -321,7 +312,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
 
             return false;
         }
-        
+
         private Stream CreateStreamFromLogEvents(TPayload batch)
         {
             List<LogEvent> payloadBatch = (List<LogEvent>)Convert.ChangeType(batch, typeof(List<LogEvent>));

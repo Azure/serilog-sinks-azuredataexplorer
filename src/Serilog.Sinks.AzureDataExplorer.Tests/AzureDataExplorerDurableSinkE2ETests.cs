@@ -19,7 +19,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests;
  * 2. remove the System.Diagnostics.CodeAnalysis.SuppressMessage
  */
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")] 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")]
 internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
 {
     private string m_bufferBaseFileName;
@@ -69,8 +69,8 @@ internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
     public async Task Test_AzureDataExplorer_Durable_SerilogSink_Queued()
     {
         var randomInt = new Random().Next();
-        m_bufferBaseFileName = Directory.GetCurrentDirectory() +"/"+randomInt+ "/logger-buffer";
-        if (!Directory.Exists( Directory.GetCurrentDirectory() +"/"+randomInt))
+        m_bufferBaseFileName = Directory.GetCurrentDirectory() + "/" + randomInt + "/logger-buffer";
+        if (!Directory.Exists(Directory.GetCurrentDirectory() + "/" + randomInt))
         {
             Directory.CreateDirectory(Directory.GetCurrentDirectory() + "/" + randomInt);
         }
@@ -110,7 +110,7 @@ internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
         {
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
-            
+
             log.Verbose(identifier + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
@@ -125,13 +125,13 @@ internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
             log.Debug(identifier + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
             log.Verbose(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            
+
         }
 
         await Task.Delay(10000);
 
         int lineCount = 0;
-        foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() +"/"+randomInt, "*.clef"))
+        foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + "/" + randomInt, "*.clef"))
         {
             lineCount += System.IO.File.ReadLines(file).Count();
         }
@@ -146,8 +146,8 @@ internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
     {
         const string identifier = "test_AzureDataExplorer_Serilog_Sink_With_Buffer_LogLevelSwitch";
         var randomInt = new Random().Next();
-        m_bufferBaseFileName = Directory.GetCurrentDirectory() +"/"+randomInt+ "/logger-buffer";
-        if (!Directory.Exists( Directory.GetCurrentDirectory() +"/"+randomInt))
+        m_bufferBaseFileName = Directory.GetCurrentDirectory() + "/" + randomInt + "/logger-buffer";
+        if (!Directory.Exists(Directory.GetCurrentDirectory() + "/" + randomInt))
         {
             Directory.CreateDirectory(Directory.GetCurrentDirectory() + "/" + randomInt);
         }
@@ -187,7 +187,7 @@ internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
         {
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
-            
+
             log.Verbose(identifier + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning(identifier + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
@@ -207,7 +207,7 @@ internal class AzureDataExplorerDurableSinkE2ETests : IDisposable
         await Task.Delay(10000);
 
         int lineCount = 0;
-        foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() +"/"+randomInt, "*.clef"))
+        foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + "/" + randomInt, "*.clef"))
         {
             lineCount += System.IO.File.ReadLines(file).Count();
         }

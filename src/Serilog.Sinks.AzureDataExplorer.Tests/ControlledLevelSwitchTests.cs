@@ -4,7 +4,7 @@ using Serilog.Sinks.AzureDataExplorer.Durable;
 
 namespace Serilog.Sinks.AzureDataExplorer.Tests
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")] 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")]
     public class ControlledLevelSwitchTests
     {
         [Fact]
@@ -78,7 +78,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             controlledLevelSwitch.Update(null);
 
             // Assert
-            Assert.Equal(LogEventLevel.Warning,loggingLevelSwitch.MinimumLevel );
+            Assert.Equal(LogEventLevel.Warning, loggingLevelSwitch.MinimumLevel);
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             controlledLevelSwitch.Update(null);
 
             // Assert
-            Assert.Equal(controlledLevelSwitch.OriginalLevel,LogEventLevel.Information);
+            Assert.Equal(controlledLevelSwitch.OriginalLevel, LogEventLevel.Information);
         }
     }
 

@@ -19,7 +19,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests;
  * 2. remove the System.Diagnostics.CodeAnalysis.SuppressMessage
  */
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")] 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")]
 internal class AzureDataExplorerSinkE2ETests : IDisposable
 {
     private readonly string m_generatedBufferFileName;
@@ -160,7 +160,7 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
         {
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
-            
+
             log.Verbose(identifer + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
@@ -175,7 +175,7 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
             log.Debug(identifer + "Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
             log.Verbose(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-            
+
         }
 
         await Task.Delay(10000);
@@ -224,7 +224,7 @@ internal class AzureDataExplorerSinkE2ETests : IDisposable
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
 
-            
+
             log.Verbose(identifer + " Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning(identifer + "Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);

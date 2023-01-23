@@ -61,10 +61,10 @@ public class FileSetTests : IDisposable
         {
             var bufferFileName = string.Format(m_tempFileFullPathTemplate,
                 string.IsNullOrEmpty(format) ? string.Empty : new DateTime(2000, 1, 1).ToString(format));
-            var lines = new[] {rollingInterval.ToString()};
+            var lines = new[] { rollingInterval.ToString() };
             // Important to use UTF8 with BOM if we are starting from 0 position 
             System.IO.File.WriteAllLines(bufferFileName, lines!, new UTF8Encoding(true));
-            result.Add((RollingInterval) rollingInterval, bufferFileName);
+            result.Add((RollingInterval)rollingInterval, bufferFileName);
         }
 
         return result;

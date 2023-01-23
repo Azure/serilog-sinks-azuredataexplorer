@@ -128,7 +128,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             {
                 ingestionMapping.IngestionMappings = SDefaultIngestionColumnMapping;
             }
-            
+
             var kcsb = options.GetKustoConnectionStringBuilder();
             m_ingestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
             m_sink = new LoggerConfiguration()
@@ -143,10 +143,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                     flushToDiskInterval: TimeSpan.FromSeconds(10),
                     rollingInterval: options.BufferFileRollingInterval,
                     rollOnFileSizeLimit: true,
-                    retainedFileCountLimit : options.BufferFileCountLimit,
+                    retainedFileCountLimit: options.BufferFileCountLimit,
                     encoding: Encoding.UTF8
                 ).CreateLogger();
-            
+
             var payloadReader = new AzureDataExplorerPayloadReader(
                 rollingInterval: options.BufferFileRollingInterval);
 
