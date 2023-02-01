@@ -60,6 +60,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
 
             kcsb.ApplicationNameForTracing = "Serilog.Sink.AzureDataExplorer";
             kcsb.ClientVersionForTracing = typeof(AzureDataExplorerSinkOptionsExtensions).Assembly.GetName().Version?.ToString();
+            kcsb.SetConnectorDetails("Serilog.Sink.AzureDataExplorer", "1.0.0", "Serilog", "2.12.0");
             return kcsb;
         }
 
