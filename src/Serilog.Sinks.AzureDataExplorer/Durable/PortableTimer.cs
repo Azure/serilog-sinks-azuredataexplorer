@@ -4,6 +4,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
 {
     /// <summary>
     /// https://github.com/serilog/serilog-sinks-seq/blob/v4.0.0/src/Serilog.Sinks.Seq/Sinks/Seq/PortableTimer.cs
+    /// The PortableTimer class is a timer implementation that executes a specified function as a recurring task after a specified time interval.
+    /// The timer is implemented as a combination of the System.Threading.Timer class and the Task.Delay method, depending on the THREADING_TIMER constant.
+    /// It implements the IDisposable interface, which allows the timer to be cleaned up when it's no longer needed.
+    /// The timer is started using the Start method, which accepts a TimeSpan argument specifying the interval at which the task should be executed.
+    /// The task is executed in an asynchronous manner using the async keyword.
+    /// The OnTick method is protected by a lock to ensure that only one instance of the task is running at a time, and it checks for cancellation before executing the task.
+    /// The Dispose method cancels the timer and releases any resources associated with it.
     /// </summary>
     class PortableTimer : IDisposable
     {

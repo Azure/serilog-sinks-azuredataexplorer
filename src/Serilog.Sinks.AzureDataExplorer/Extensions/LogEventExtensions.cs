@@ -2,6 +2,9 @@
 
 namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
+    //This class is a static utility class that provides extensions for logging events.
+    //It includes methods to convert LogEvent and IReadOnlyDictionary<string, LogEventPropertyValue> objects into JSON and IDictionary<string, object> formats, allowing for easier serialization and manipulation of log event data.
+    //The private implementation section includes methods for converting the data and simplifying the structure of the resulting dictionary.
     internal static class LogEventExtensions
     {
         internal static string Json(this LogEvent logEvent, IFormatProvider formatProvider = null)

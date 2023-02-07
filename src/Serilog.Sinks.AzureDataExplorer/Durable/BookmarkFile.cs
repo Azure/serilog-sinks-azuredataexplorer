@@ -4,6 +4,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
 {
     /// <summary>
     /// https://github.com/serilog/serilog-sinks-seq/blob/v4.0.0/src/Serilog.Sinks.Seq/Sinks/Seq/Durable/BookmarkFile.cs
+    /// this class is a file-based bookmark mechanism.
+    /// It provides a way to persist a bookmark across multiple executions of an application.
+    /// The bookmark is stored in a file and is represented as a FileSetPosition object, which contains the starting position of the next line in a file and the file name.
+    /// The class provides methods to read and write the bookmark to the file, and implements the IDisposable interface to clean up any resources it uses.
     /// </summary>
     sealed class BookmarkFile : IDisposable
     {

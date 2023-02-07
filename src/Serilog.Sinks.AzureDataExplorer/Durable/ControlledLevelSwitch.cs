@@ -8,6 +8,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
     /// timer thread. An exception is <see cref="IsIncluded(LogEvent)"/>, which may be called
     /// concurrently but performs no synchronization.
     /// https://github.com/serilog/serilog-sinks-seq/blob/v4.0.0/src/Serilog.Sinks.Seq/Sinks/Seq/ControlledLevelSwitch.cs
+    /// The "ControlledLevelSwitch" class is used to control the minimum logging level of a "LoggingLevelSwitch" object.
+    /// The class keeps track of the original logging level of the "LoggingLevelSwitch" object and allows it to be updated to a new level specified by the server.
+    /// The class provides methods to check if it is active, and to determine if a given log event is included at the current logging level.
     /// </summary>
     class ControlledLevelSwitch
     {

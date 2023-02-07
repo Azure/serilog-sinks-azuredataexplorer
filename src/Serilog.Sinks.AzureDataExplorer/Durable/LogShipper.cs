@@ -17,6 +17,11 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
     /// <summary>
     /// Reads and sends logdata to log server
     /// Generic version of  https://github.com/serilog/serilog-sinks-seq/blob/v4.0.0/src/Serilog.Sinks.Seq/Sinks/Seq/Durable/HttpLogShipper.cs
+    /// This class sends log data to a specified destination (likely an instance of IKustoQueuedIngestClient).
+    /// The class implements the IDisposable interface, which allows it to be used in a using statement to ensure that it is correctly disposed of when it goes out of scope.
+    /// The class has fields to store various configuration options such as the batch posting limit, event body limit, payload reader, buffer size limit, and timer.
+    /// The class also includes methods for checking if a log event is included, disposing of the shipper, and a tick method (OnTick) that performs the actual data shipment.
+    /// When Dispose is called or the using block that the shipper is in ends, the CloseAndFlush method is called, which sets the unloading flag, disposes the timer, and then performs one final shipment of any remaining data.
     /// </summary>
     /// <typeparam name="TPayload"></typeparam>
     public sealed class LogShipper<TPayload> : IDisposable

@@ -1,5 +1,8 @@
 ﻿namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
+    //It provides two extension methods, GetFormat and GetMatchingDateRegularExpressionPart, for the enumeration type RollingInterval.
+    //The GetFormat method returns a string representing a date format, based on the value of the RollingInterval enumeration passed as an argument.
+    //The GetMatchingDateRegularExpressionPart method returns a regular expression string that matches a date pattern based on the value of the RollingInterval enumeration passed as an argument.
     internal static class RollingIntervalExtensions
     {
         // From https://github.com/serilog/serilog-sinks-file/blob/dev/src/Serilog.Sinks.File/Sinks/File/RollingIntervalExtensions.cs#L19

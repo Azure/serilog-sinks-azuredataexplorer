@@ -3,7 +3,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
 {
     /// <summary>
     /// Based on the BatchedConnectionStatus class from <see cref="Serilog.Sinks.PeriodicBatching.PeriodicBatchingSink"/>.
-    /// https://github.com/serilog/serilog-sinks-seq/blob/v4.0.0/src/Serilog.Sinks.Seq/Sinks/Seq/ExponentialBackoffConnectionSchedule.cs
+    /// this class implements an exponential backoff algorithm for retrying connections.
+    /// The class has a period and a counter for the number of failures since the last successful connection.
+    /// It also provides a mechanism for marking successes and failures, and calculates the next interval to wait based on the number of failures, subject to a minimum and maximum interval.
     /// </summary>
     public class ExponentialBackoffConnectionSchedule
     {

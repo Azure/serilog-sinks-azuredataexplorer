@@ -6,6 +6,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
 {
     /// <summary>
     /// https://github.com/serilog/serilog-sinks-seq/blob/v4.0.0/src/Serilog.Sinks.Seq/Sinks/Seq/Durable/FileSet.cs
+    /// class is a utility class that provides operations related to managing a set of files in a directory.
+    /// It holds information about a specific set of files, including a bookmark file, log folder, and candidate search path.
+    /// It also includes regular expression for matching the filenames of the files in the set.
+    /// The class provides methods for opening the bookmark file, getting the buffer files, cleaning up buffer files and invalid payload files, making invalid payload file names, and deleting files exceeding a cumulative size.
     /// </summary>
     class FileSet
     {
