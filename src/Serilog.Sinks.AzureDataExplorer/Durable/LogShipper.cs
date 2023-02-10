@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.IO;
@@ -12,6 +11,7 @@ using Serilog.Sinks.AzureDataExplorer.Extensions;
 using IOFile = System.IO.File;
 
 [assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests")]
+
 namespace Serilog.Sinks.AzureDataExplorer.Durable
 {
     /// <summary>
@@ -33,12 +33,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         private readonly IPayloadReader<TPayload> m_payloadReader;
         readonly FileSet m_fileSet;
         private readonly long? m_bufferSizeLimitBytes;
-
-        // Timer thread only
-
-        /// <summary>
-        /// 
-        /// </summary>
         private readonly ExponentialBackoffConnectionSchedule m_connectionSchedule;
         DateTime m_nextRequiredLevelCheckUtc = DateTime.UtcNow.Add(RequiredLevelCheckInterval);
 
@@ -65,7 +59,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         private static readonly TimeSpan TimeBetweenChecks = TimeSpan.FromSeconds(5);
 
         /// <summary>
-        /// 
+        /// constructor which initializes 
         /// </summary>
         /// <param name="bufferBaseFilename"></param>
         /// <param name="batchPostingLimit"></param>
@@ -112,7 +106,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             m_ingestionMapping = ingestionMapping;
             m_flushImmediately = flushImmediately;
             SetTimer();
-
         }
 
         void CloseAndFlush()
@@ -131,7 +124,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         }
 
         /// <summary>
-        /// 
+        /// method which checks the minimum logging level
         /// </summary>
         /// <param name="logEvent"></param>
         /// <returns></returns>
@@ -153,7 +146,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         }
 
         /// <summary>
-        /// 
+        /// method which gets invoked during the end of every time interval 
         /// </summary>
         /// <returns></returns>
         private async Task OnTick()
@@ -195,23 +188,21 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                             using (var dataStream = CreateStreamFromLogEvents(payload))
                             {
                                 result = await m_ingestClient.IngestFromStreamAsync(
-                                        dataStream,
-                                        new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
-                                        {
-                                            DatabaseName = m_databaseName,
-                                            TableName = m_tableName,
-                                            FlushImmediately = m_flushImmediately,
-                                            Format = DataSourceFormat.multijson,
-                                            IngestionMapping = m_ingestionMapping,
-                                            ReportLevel = IngestionReportLevel.FailuresAndSuccesses,
-                                            ReportMethod = IngestionReportMethod.Table
-                                        },
-                                        new StreamSourceOptions
-                                        {
-                                            LeaveOpen = false,
-                                            CompressionType = DataSourceCompressionType.GZip,
-                                            SourceId = fileIdentifier
-                                        }).ConfigureAwait(false);
+                                    dataStream,
+                                    new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
+                                    {
+                                        DatabaseName = m_databaseName,
+                                        TableName = m_tableName,
+                                        FlushImmediately = m_flushImmediately,
+                                        Format = DataSourceFormat.multijson,
+                                        IngestionMapping = m_ingestionMapping,
+                                        ReportLevel = IngestionReportLevel.FailuresAndSuccesses,
+                                        ReportMethod = IngestionReportMethod.Table
+                                    },
+                                    new StreamSourceOptions
+                                    {
+                                        LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip, SourceId = fileIdentifier
+                                    }).ConfigureAwait(false);
                             }
                             var ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
 

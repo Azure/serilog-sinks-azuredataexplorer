@@ -2,7 +2,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Durable;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests
+namespace Serilog.Sinks.AzureDataExplorer
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1000:Test classes must be public", Justification = "Disabled")]
     public class ControlledLevelSwitchTests
@@ -95,5 +95,4 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             Assert.Equal(controlledLevelSwitch.OriginalLevel, LogEventLevel.Information);
         }
     }
-
 }

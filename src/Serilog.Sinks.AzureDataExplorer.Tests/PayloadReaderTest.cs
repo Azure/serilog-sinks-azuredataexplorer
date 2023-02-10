@@ -1,6 +1,6 @@
 using Serilog.Sinks.AzureDataExplorer.Durable;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests
+namespace Serilog.Sinks.AzureDataExplorer
 {
     public class PayloadReaderTest
     {
@@ -55,18 +55,22 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
         class TestPayloadReader : APayloadReader<string>
         {
             private string m_payload = "";
+
             public override string GetNoPayload()
             {
                 return "";
             }
+
             protected override void InitPayLoad(string fileName)
             {
                 m_payload = "";
             }
+
             protected override string FinishPayLoad()
             {
                 return m_payload;
             }
+
             protected override void AddToPayLoad(string nextLine)
             {
                 m_payload += nextLine + "\n";

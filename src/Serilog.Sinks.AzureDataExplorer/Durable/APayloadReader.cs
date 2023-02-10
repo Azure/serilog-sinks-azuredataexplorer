@@ -11,13 +11,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
     public abstract class APayloadReader<TPayload> : IPayloadReader<TPayload>
     {
         /// <summary>
-        /// 
+        /// Abstract method whose implementation returns empty payload
         /// </summary>
         /// <returns></returns>
         public abstract TPayload GetNoPayload();
 
         /// <summary>
-        /// 
+        /// reads data from a file and process it in batches
         /// </summary>
         /// <param name="batchPostingLimit"></param>
         /// <param name="eventBodyLimitBytes"></param>
@@ -25,7 +25,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         /// <param name="count"></param>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public TPayload ReadPayload(int batchPostingLimit, long? eventBodyLimitBytes, ref FileSetPosition position, ref int count,string fileName)
+        public TPayload ReadPayload(int batchPostingLimit, long? eventBodyLimitBytes, ref FileSetPosition position, ref int count, string fileName)
         {
             InitPayLoad(fileName);
 
@@ -48,27 +48,30 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                     }
                     else
                     {
-                         AddToPayLoad(nextLine);
+                        AddToPayLoad(nextLine);
                     }
-                }                
+                }
             }
             return FinishPayLoad();
         }
+
         /// <summary>
-        /// 
+        /// abstract method for InitPayload
         /// </summary>
         /// <param name="fileName"></param>
         protected abstract void InitPayLoad(string fileName);
+
         /// <summary>
-        /// 
+        /// Abstract method of finish payload
         /// </summary>
         /// <returns></returns>
         protected abstract TPayload FinishPayLoad();
+
         /// <summary>
-        /// 
+        /// abstract method for AddToPayload
         /// </summary>
         /// <param name="nextLine"></param>
-        protected abstract void AddToPayLoad(string nextLine);        
+        protected abstract void AddToPayLoad(string nextLine);
 
         // It would be ideal to chomp whitespace here, but not required.
         private static bool TryReadLine(Stream current, ref long nextStart, out string nextLine)

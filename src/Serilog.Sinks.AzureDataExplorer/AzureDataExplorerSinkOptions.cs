@@ -3,6 +3,9 @@ using Serilog.Core;
 
 namespace Serilog.Sinks.AzureDataExplorer
 {
+    /// <summary>
+    /// class which contains attributes required to configure the sink
+    /// </summary>
     public class AzureDataExplorerSinkOptions
     {
         private int m_queueSizeLimit;
@@ -57,6 +60,9 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// </summary>
         public IEnumerable<SinkColumnMapping> ColumnsMapping { get; set; }
 
+        /// <summary>
+        /// format provider to format log output
+        /// </summary>
         public IFormatProvider FormatProvider { get; set; }
 
         /// <summary>
@@ -111,17 +117,64 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// </summary>
         public bool FlushImmediately { get; set; }
 
+        /// <summary>
+        /// determines the authentication mode
+        /// </summary>
         public AuthenticationMode AuthenticationMode { get; private set; }
+
+        /// <summary>
+        /// user token
+        /// </summary>
         public string UserToken { get; private set; }
+
+        /// <summary>
+        /// application token
+        /// </summary>
         public string ApplicationToken { get; private set; }
+
+        /// <summary>
+        /// application clientId
+        /// </summary>
         public string ApplicationClientId { get; private set; }
+
+        /// <summary>
+        /// ApplicationCertificateThumbprint
+        /// </summary>
         public string ApplicationCertificateThumbprint { get; private set; }
+
+        /// <summary>
+        /// ApplicationCertificateSubjectDistinguishedName
+        /// </summary>
         public string ApplicationCertificateSubjectDistinguishedName { get; private set; }
+
+        /// <summary>
+        /// ApplicationKey
+        /// </summary>
         public string ApplicationKey { get; private set; }
+
+        /// <summary>
+        /// ApplicationCertificate
+        /// </summary>
         public X509Certificate2 ApplicationCertificate { get; private set; }
+
+        /// <summary>
+        /// Authority
+        /// </summary>
         public string Authority { get; private set; }
+
+        /// <summary>
+        /// SendX5C
+        /// </summary>
         public bool SendX5C { get; private set; }
+
+        /// <summary>
+        /// AzureRegion
+        /// </summary>
         public string AzureRegion { get; private set; }
+
+        /// <summary>
+        /// TokenCredential
+        /// </summary>
         public Azure.Core.TokenCredential TokenCredential { get; private set; }
 
         public AzureDataExplorerSinkOptions()
@@ -130,15 +183,17 @@ namespace Serilog.Sinks.AzureDataExplorer
             this.BatchPostingLimit = 1000;
             this.QueueSizeLimit = 100000;
             this.BufferFileRollingInterval = RollingInterval.Hour;
-            this.BufferFileCountLimit = 31;
-            this.BufferFileSizeLimitBytes = 100L * 1024 * 1024;
+            this.BufferFileCountLimit = 20;
+            this.BufferFileSizeLimitBytes = 10L * 1024 * 1024;
             this.BufferFileOutputFormat =
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
             this.FlushImmediately = false;
         }
 
         #region Authentication builder methods
-        public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority, bool sendX5C = false, string azureRegion = null)
+
+        public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority,
+            bool sendX5C = false, string azureRegion = null)
         {
             AuthenticationMode = AuthenticationMode.AadApplicationCertificate;
             ApplicationClientId = applicationClientId;
@@ -150,9 +205,15 @@ namespace Serilog.Sinks.AzureDataExplorer
             return this;
         }
 
-        public AzureDataExplorerSinkOptions WithAadManagedIdentity(string applicationClientId)
+        public AzureDataExplorerSinkOptions WithAadSystemAssignedManagedIdentity()
         {
-            AuthenticationMode = AuthenticationMode.AadManagedIdentity;
+            AuthenticationMode = AuthenticationMode.AadSystemManagedIdentity;
+            return this;
+        }
+
+        public AzureDataExplorerSinkOptions WithAadUserAssignedManagedIdentity(string applicationClientId)
+        {
+            AuthenticationMode = AuthenticationMode.AadUserManagedIdentity;
             ApplicationClientId = applicationClientId;
             return this;
         }
@@ -167,7 +228,8 @@ namespace Serilog.Sinks.AzureDataExplorer
             return this;
         }
 
-        public AzureDataExplorerSinkOptions WithAadApplicationSubjectName(string applicationClientId, string applicationCertificateSubjectDistinguishedName, string authority, string azureRegion = null)
+        public AzureDataExplorerSinkOptions WithAadApplicationSubjectName(string applicationClientId, string applicationCertificateSubjectDistinguishedName,
+            string authority, string azureRegion = null)
         {
             AuthenticationMode = AuthenticationMode.AadApplicationSubjectName;
             ApplicationClientId = applicationClientId;
@@ -211,6 +273,7 @@ namespace Serilog.Sinks.AzureDataExplorer
 
             return this;
         }
+
         #endregion
     }
 
@@ -224,7 +287,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         AadApplicationThumbprint,
         AadApplicationToken,
         AadAzureTokenCredentials,
-        AadManagedIdentity
+        AadUserManagedIdentity,
+        AadSystemManagedIdentity
     }
-
 }

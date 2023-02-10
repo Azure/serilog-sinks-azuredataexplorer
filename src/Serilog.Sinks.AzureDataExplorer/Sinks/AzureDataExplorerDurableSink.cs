@@ -12,6 +12,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
     internal class AzureDataExplorerDurableSink : ILogEventSink, IDisposable
     {
         const string FileNameSuffix = "-.clef";
+
         private static readonly List<ColumnMapping> SDefaultIngestionColumnMapping = new List<ColumnMapping>
         {
             new ColumnMapping
@@ -73,38 +74,22 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 
         private readonly Logger m_sink;
 
-        private readonly IKustoQueuedIngestClient m_ingestClient;
         private readonly LogShipper<List<LogEvent>> m_shipper;
+        private bool m_disposed;
+        private IKustoQueuedIngestClient m_kustoQueuedIngestClient;
 
         public AzureDataExplorerDurableSink(AzureDataExplorerSinkOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (options.DatabaseName == null)
-            {
-                throw new ArgumentNullException(nameof(options.DatabaseName));
-            }
-            if (options.TableName == null)
-            {
-                throw new ArgumentNullException(nameof(options.TableName));
-            }
-            if (options.IngestionEndpointUri == null)
-            {
-                throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
-            }
+            if (options == null) throw new ArgumentNullException(nameof(options));
+            var databaseName = options.DatabaseName ?? throw new ArgumentNullException(nameof(options.DatabaseName));
+            var tableName = options.TableName ?? throw new ArgumentNullException(nameof(options.TableName));
+            if (options.IngestionEndpointUri == null) throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
             if (string.IsNullOrWhiteSpace(options.BufferBaseFileName))
-            {
                 throw new ArgumentException("Cannot create the durable ADX sink without a buffer base file name!");
-            }
 
-            var formatProvider = options.FormatProvider;
-            var databaseName = options.DatabaseName;
-            var tableName = options.TableName;
-            var mappingName = options.MappingName;
             var flushImmediately = options.FlushImmediately;
-
+            var formatProvider = options.FormatProvider;
+            var mappingName = options.MappingName;
             var ingestionMapping = new IngestionMapping();
             if (!string.IsNullOrEmpty(mappingName))
             {
@@ -130,7 +115,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             }
 
             var kcsb = options.GetKustoConnectionStringBuilder();
-            m_ingestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
+            m_kustoQueuedIngestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
             m_sink = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
                 .WriteTo.File(new CompactJsonFormatter(),
@@ -138,8 +123,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                     restrictedToMinimumLevel: LevelAlias.Minimum,
                     fileSizeLimitBytes: options.BufferFileSizeLimitBytes,
                     levelSwitch: options.BufferFileLoggingLevelSwitch,
-                    buffered: false,
-                    shared: false,
                     flushToDiskInterval: TimeSpan.FromSeconds(10),
                     rollingInterval: options.BufferFileRollingInterval,
                     rollOnFileSizeLimit: true,
@@ -159,7 +142,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                 payloadReader: payloadReader,
                 bufferSizeLimitBytes: options.BufferFileSizeLimitBytes,
                 rollingInterval: options.BufferFileRollingInterval,
-                ingestClient: m_ingestClient,
+                ingestClient: m_kustoQueuedIngestClient,
                 formatProvider: formatProvider,
                 databaseName: databaseName,
                 tableName: tableName,
@@ -178,10 +161,30 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             }
         }
 
+        #region IDisposable methods
+
         public void Dispose()
         {
-            m_sink.Dispose();
-            m_shipper.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
+
+        private void Dispose(bool disposing)
+        {
+            if (m_disposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                m_sink.Dispose();
+                m_shipper.Dispose();
+            }
+
+            m_disposed = true;
+        }
+
+        #endregion
     }
 }

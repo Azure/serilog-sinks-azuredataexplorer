@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Serilog.Sinks.AzureDataExplorer.Durable;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests
+namespace Serilog.Sinks.AzureDataExplorer
 {
     public class BookmarkFileTests
     {

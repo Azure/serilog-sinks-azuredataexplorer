@@ -1,6 +1,6 @@
 using Serilog.Sinks.AzureDataExplorer.Extensions;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests
+namespace Serilog.Sinks.AzureDataExplorer
 {
     public class RollingIntervalExtensionsTests
     {

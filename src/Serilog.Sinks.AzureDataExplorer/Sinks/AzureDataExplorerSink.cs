@@ -8,18 +8,70 @@ using Serilog.Sinks.AzureDataExplorer.Extensions;
 using Serilog.Sinks.PeriodicBatching;
 
 [assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests")]
+
 namespace Serilog.Sinks.AzureDataExplorer.Sinks
 {
     internal sealed class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
     {
         private static readonly RecyclableMemoryStreamManager SRecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+
         private static readonly List<ColumnMapping> SDefaultIngestionColumnMapping = new List<ColumnMapping>
         {
-            new ColumnMapping { ColumnName = "Timestamp", ColumnType = "datetime", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Timestamp" } } },
-            new ColumnMapping { ColumnName = "Level", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Level" } } },
-            new ColumnMapping { ColumnName = "Message", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Message" } } },
-            new ColumnMapping { ColumnName = "Exception", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Exception" } } },
-            new ColumnMapping { ColumnName = "Properties", ColumnType = "dynamic", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Properties" } } },
+            new ColumnMapping
+            {
+                ColumnName = "Timestamp",
+                ColumnType = "datetime",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Timestamp"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Level",
+                ColumnType = "string",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Level"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Message",
+                ColumnType = "string",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Message"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Exception",
+                ColumnType = "string",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Exception"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Properties",
+                ColumnType = "dynamic",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Properties"
+                    }
+                }
+            },
         };
 
         private readonly IFormatProvider m_formatProvider;
@@ -34,26 +86,11 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 
         public AzureDataExplorerSink(AzureDataExplorerSinkOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (options.DatabaseName == null)
-            {
-                throw new ArgumentNullException(nameof(options.DatabaseName));
-            }
-            if (options.TableName == null)
-            {
-                throw new ArgumentNullException(nameof(options.TableName));
-            }
-            if (options.IngestionEndpointUri == null)
-            {
-                throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
-            }
-
+            if (options == null) throw new ArgumentNullException(nameof(options));
+            m_databaseName = options.DatabaseName ?? throw new ArgumentNullException(nameof(options.DatabaseName));
+            m_tableName = options.TableName ?? throw new ArgumentNullException(nameof(options.TableName));
+            if (options.IngestionEndpointUri == null) throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
             m_formatProvider = options.FormatProvider;
-            m_databaseName = options.DatabaseName;
-            m_tableName = options.TableName;
             var mappingName = options.MappingName;
             m_flushImmediately = options.FlushImmediately;
             m_streamingIngestion = options.UseStreamingIngestion;
@@ -65,7 +102,17 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             }
             else if (options.ColumnsMapping?.Any() == true)
             {
-                m_ingestionMapping.IngestionMappings = options.ColumnsMapping.Select(m => new ColumnMapping { ColumnName = m.ColumnName, ColumnType = m.ColumnType, Properties = new Dictionary<string, string>(1) { { MappingConsts.Path, m.ValuePath } } }).ToList();
+                m_ingestionMapping.IngestionMappings = options.ColumnsMapping.Select(m => new ColumnMapping
+                {
+                    ColumnName = m.ColumnName,
+                    ColumnType = m.ColumnType,
+                    Properties = new Dictionary<string, string>(1)
+                    {
+                        {
+                            MappingConsts.Path, m.ValuePath
+                        }
+                    }
+                }).ToList();
             }
             else
             {
@@ -89,6 +136,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
         {
             using (var dataStream = CreateStreamFromLogEvents(batch))
             {
+                var sourceId = Guid.NewGuid();
                 if (!m_streamingIngestion)
                 {
                     await m_ingestClient.IngestFromStreamAsync(
@@ -103,8 +151,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                         },
                         new StreamSourceOptions
                         {
-                            LeaveOpen = false,
-                            CompressionType = DataSourceCompressionType.GZip
+                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
                         }).ConfigureAwait(false);
                 }
                 else
@@ -113,15 +160,11 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                         dataStream,
                         new KustoIngestionProperties()
                         {
-                            DatabaseName = m_databaseName,
-                            TableName = m_tableName,
-                            Format = DataSourceFormat.multijson,
-                            IngestionMapping = m_ingestionMapping
+                            DatabaseName = m_databaseName, TableName = m_tableName, Format = DataSourceFormat.multijson, IngestionMapping = m_ingestionMapping
                         },
                         new StreamSourceOptions
                         {
-                            LeaveOpen = false,
-                            CompressionType = DataSourceCompressionType.GZip
+                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
                         }).ConfigureAwait(false);
                 }
             }
@@ -172,6 +215,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 
             m_disposed = true;
         }
+
         #endregion
     }
 }

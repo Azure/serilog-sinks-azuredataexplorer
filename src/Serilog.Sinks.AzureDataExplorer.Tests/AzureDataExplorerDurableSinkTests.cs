@@ -1,6 +1,6 @@
 using Serilog.Sinks.AzureDataExplorer.Sinks;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests
+namespace Serilog.Sinks.AzureDataExplorer
 {
     public class AzureDataExplorerDurableSinkTests
     {
@@ -70,4 +70,3 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
         }
     }
 }
-

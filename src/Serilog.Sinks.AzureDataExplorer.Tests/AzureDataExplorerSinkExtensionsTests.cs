@@ -1,7 +1,7 @@
 using Serilog.Configuration;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests;
+namespace Serilog.Sinks.AzureDataExplorer;
 
 public class AzureDataExplorerSinkExtensionsTests
 {
@@ -32,7 +32,7 @@ public class AzureDataExplorerSinkExtensionsTests
     public void AzureDataExplorerSink_Throws_Exception_For_Null_LoggerConfiguration()
     {
         // Arrange
-        LoggerSinkConfiguration loggerConfiguration = null;
+        LoggerSinkConfiguration? loggerConfiguration = null;
         var options = new AzureDataExplorerSinkOptions();
 
         // Act & Assert
@@ -45,7 +45,7 @@ public class AzureDataExplorerSinkExtensionsTests
     {
         // Arrange
         var loggerConfiguration = new LoggerConfiguration();
-        AzureDataExplorerSinkOptions options = null;
+        AzureDataExplorerSinkOptions? options = null;
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>

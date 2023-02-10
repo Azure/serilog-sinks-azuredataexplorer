@@ -100,11 +100,11 @@ Durable mode can be turned on when we specify the bufferFileName in the LoggerCo
 
 * BufferLogShippingInterval : The interval between checking the buffer files.
 
-* BufferFileSizeLimitBytes : The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
+* BufferFileSizeLimitBytes : The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 10 MB is applied
 
 * BufferFileLoggingLevelSwitch : A switch allowing the pass-through minimum level to be changed at runtime.
 
-* BufferFileCountLimit : The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.
+* BufferFileCountLimit : The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 20.
 
 ### Authentication
 
@@ -125,4 +125,5 @@ new AzureDataExplorerSinkOptions()
 | AadApplicationThumbprint  | WithAadApplicationThumbprint  |                                   |
 | AadApplicationToken       | WithAadApplicationToken       |                                   |
 | AadAzureTokenCredentials  | WithAadAzureTokenCredentials  |                                   |
-| AadManagedIdentity        | WithAadUserManagedIdentity    |                                   |
+| AadUserManagedIdentity    | WithAadUserManagedIdentity    |                                   |
+| AadSystemManagedIdentity  | WithAadSystemManagedIdentity    |                                   |

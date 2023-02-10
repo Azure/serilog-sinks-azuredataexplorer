@@ -3,7 +3,7 @@ using Kusto.Ingest;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Sinks;
 
-namespace Serilog.Sinks.AzureDataExplorer.Tests
+namespace Serilog.Sinks.AzureDataExplorer
 {
     public class AzureDataExplorerSinkTest
     {
@@ -21,9 +21,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = null,
-                TableName = "table",
-                IngestionEndpointUri = "http://localhost",
+                DatabaseName = null, TableName = "table", IngestionEndpointUri = "http://localhost",
             };
 
             // Act, Assert
@@ -37,9 +35,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db",
-                TableName = null,
-                IngestionEndpointUri = "http://localhost",
+                DatabaseName = "db", TableName = null, IngestionEndpointUri = "http://localhost",
             };
 
             // Act, Assert
@@ -53,9 +49,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db",
-                TableName = "table",
-                IngestionEndpointUri = null,
+                DatabaseName = "db", TableName = "table", IngestionEndpointUri = null,
             };
 
             // Act, Assert
@@ -69,9 +63,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db",
-                TableName = "table",
-                IngestionEndpointUri = "http://localhost",
+                DatabaseName = "db", TableName = "table", IngestionEndpointUri = "http://localhost",
             };
 
             // Act
@@ -137,10 +129,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
         {
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db",
-                TableName = "table",
-                IngestionEndpointUri = "http://localhost",
-                UseStreamingIngestion = true,
+                DatabaseName = "db", TableName = "table", IngestionEndpointUri = "http://localhost", UseStreamingIngestion = true,
             };
             var sink = new AzureDataExplorerSink(options);
 
@@ -152,7 +141,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Tests
                 MessageTemplate.Empty,
                 Enumerable.Empty<LogEventProperty>()
             );
-            var batch = new List<LogEvent> { logEvent1 };
+            var batch = new List<LogEvent>
+            {
+                logEvent1
+            };
 
             Assert.NotNull(sink);
 

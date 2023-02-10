@@ -49,7 +49,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 case AuthenticationMode.AadUserToken:
                     kcsb = kcsb.WithAadUserTokenAuthentication(options.UserToken);
                     break;
-                case AuthenticationMode.AadManagedIdentity:
+                case AuthenticationMode.AadSystemManagedIdentity:
+                    kcsb = kcsb.WithAadSystemManagedIdentity();
+                    break;
+                case AuthenticationMode.AadUserManagedIdentity:
                     kcsb = kcsb.WithAadUserManagedIdentity(options.ApplicationClientId);
                     break;
                 case AuthenticationMode.AadUserPrompt:
