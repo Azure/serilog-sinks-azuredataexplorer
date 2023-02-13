@@ -126,4 +126,4 @@ new AzureDataExplorerSinkOptions()
 | AadApplicationToken       | WithAadApplicationToken       |                                   |
 | AadAzureTokenCredentials  | WithAadAzureTokenCredentials  |                                   |
 | AadUserManagedIdentity    | WithAadUserManagedIdentity    |                                   |
-| AadSystemManagedIdentity  | WithAadSystemManagedIdentity  |                                   |
+| AadSystemManagedIdentity  | WithAadSystemManagedIdentity    |                                   |
