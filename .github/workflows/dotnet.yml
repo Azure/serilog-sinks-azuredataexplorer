@@ -22,4 +22,10 @@ jobs:
     - name: Build
       run: dotnet build src --no-restore
     - name: Test
+      env:
+        ingestionURI : ${{secrets.INGESTION_URI}}
+        databaseName : ${{secrets.DATABASE_NAME}}
+        appId : ${{secrets.APP_ID}}
+        appKey : ${{secrets.APP_KEY}}
+        tenant : ${{secrets.TENANT}}
       run: dotnet test src --no-build --verbosity normal
