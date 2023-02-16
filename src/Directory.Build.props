@@ -29,8 +29,6 @@
       Added Tests
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <SignAssembly>True</SignAssembly>
     <Version>1.0.3</Version>
     <AssemblyVersion>1.0.3.0</AssemblyVersion>

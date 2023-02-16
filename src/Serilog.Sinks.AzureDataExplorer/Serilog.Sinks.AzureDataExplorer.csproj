@@ -12,12 +12,18 @@
       Added Sample project
       Added unit Tests
       Added End To End Test cases</PackageReleaseNotes>
-    <AssemblyOriginatorKeyFile>Serilog.Sinks.AzureDataExplorer.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>C:\workspace\serilog-sinks-azuredataexplorer\src\adxSerilog.snk</AssemblyOriginatorKeyFile>
     <PublicSign>true</PublicSign>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Serilog.Sinks.File" />
+    <None Include="..\..\..\..\adxSerilog.snk" Link="adxSerilog.snk" />
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Update="serilog-sink-icon.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>

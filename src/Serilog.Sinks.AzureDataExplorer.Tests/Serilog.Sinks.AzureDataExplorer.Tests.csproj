@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -8,6 +8,7 @@
 
     <IsPackable>false</IsPackable>
     <UserSecretsId>8918d8fc-2249-41d1-8051-725fd257d379</UserSecretsId>
+    <AssemblyOriginatorKeyFile>C:\workspace\serilog-sinks-azuredataexplorer\src\adxSerilog.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +33,9 @@
     <None Remove="Microsoft.Extensions.Configuration.UserSecrets" />
     <None Remove="Moq" />
     <None Remove="Moq.AutoMock" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\adxSerilog.snk" Link="adxSerilog.snk" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Update="FluentAssertions" Version="6.9.0" />
