@@ -2,9 +2,26 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <AssemblyOriginatorKeyFile>Serilog.Sinks.AzureDataExplorer.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageIcon>serilog-sink-icon.png</PackageIcon>
+    <PackageReleaseNotes>
+      Added GZip compression when sending data
+      Improved options default values
+      Added durability to the Azure Data Explorer Sink
+      Added Sample project
+      Added unit Tests
+      Added End To End Test cases</PackageReleaseNotes>
+    <AssemblyOriginatorKeyFile>Serilog.Sinks.AzureDataExplorer.snk</AssemblyOriginatorKeyFile>
+    <PublicSign>true</PublicSign>
+  </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Serilog.Sinks.File" />
+    <None Update="serilog-sink-icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

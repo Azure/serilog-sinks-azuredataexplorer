@@ -11,7 +11,6 @@ using Serilog.Sinks.AzureDataExplorer.Extensions;
 using IOFile = System.IO.File;
 
 [assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests")]
-
 namespace Serilog.Sinks.AzureDataExplorer.Durable
 {
     /// <summary>

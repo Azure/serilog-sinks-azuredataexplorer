@@ -6,11 +6,13 @@ using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
-    //The class "AzureDataExplorerSinkExtensions" is an extension method for the Serilog logging library.
-    //It extends the "LoggerSinkConfiguration" class by adding a new method "AzureDataExplorerSink" to it.
-    //This method configures the logging pipeline to include the Azure Data Explorer sink and can be used to send log events to Azure Data Explorer.
-    //The method sets up batching for the log events and enables configurable options such as the batch size, posting limit, and event queue size limit.
-    //If a buffer base file name is provided, the method will use the "AzureDataExplorerDurableSink" class to buffer log events to disk.
+    /// <summary>
+    /// The class "AzureDataExplorerSinkExtensions" is an extension method for the Serilog logging library.
+    /// It extends the "LoggerSinkConfiguration" class by adding a new method "AzureDataExplorerSink" to it.
+    /// This method configures the logging pipeline to include the Azure Data Explorer sink and can be used to send log events to Azure Data Explorer.
+    /// The method sets up batching for the log events and enables configurable options such as the batch size, posting limit, and event queue size limit.
+    /// If a buffer base file name is provided, the method will use the "AzureDataExplorerDurableSink" class to buffer log events to disk.
+    /// </summary>
     public static class AzureDataExplorerSinkExtensions
     {
         public static LoggerConfiguration AzureDataExplorerSink(

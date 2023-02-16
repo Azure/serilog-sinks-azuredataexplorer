@@ -10,7 +10,6 @@ namespace Serilog.Sinks.AzureDataExplorer;
  * This is an End to End Testcase which requires the following input to be set as environment variables
  * ingestionURI : ingestion URL of ADX
  * databaseName : database name 
- * bufferFileName : If durable mode is required, we need to mention the buffer file name, this option is not mandatory
  * appId : Application client Id
  * appKey : Application client key
  * tenant : Authority
