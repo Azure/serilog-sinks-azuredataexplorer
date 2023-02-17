@@ -4,6 +4,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
     internal static class AzureDataExplorerSinkOptionsExtensions
     {
+        private const string AppName = "Serilog.Sinks.AzureDataExplorer";
+        private const string ClientVersion = "1.0.3";
         public static KustoConnectionStringBuilder GetKustoConnectionStringBuilder(
             this AzureDataExplorerSinkOptions options)
         {
@@ -61,12 +63,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                     break;
             }
 
-            var appName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var clientVersion = typeof(AzureDataExplorerSinkOptionsExtensions).Assembly.GetName().Version?.ToString();
-
-            kcsb.ApplicationNameForTracing = appName;
-            kcsb.ClientVersionForTracing = clientVersion;
-            kcsb.SetConnectorDetails(appName, clientVersion, "Serilog", "2.12.0");
+            kcsb.ApplicationNameForTracing = AppName;
+            kcsb.ClientVersionForTracing = ClientVersion;
+            kcsb.SetConnectorDetails(AppName, ClientVersion, "Serilog", "2.12.0");
             return kcsb;
         }
 

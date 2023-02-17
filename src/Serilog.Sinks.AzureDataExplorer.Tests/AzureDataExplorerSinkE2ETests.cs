@@ -132,7 +132,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(10000);
+        await Task.Delay(20000);
 
         if (String.Equals(runMode, "durable"))
         {
