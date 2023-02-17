@@ -150,7 +150,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
     private Logger GetSerilogAdxSink(string identifier)
     {
-        Logger logger = null;
+        Logger? logger = null;
         switch (identifier)
         {
             case "Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_Durable":
@@ -223,6 +223,10 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
                     .CreateLogger();
                 break;
+            default:
+                logger = new LoggerConfiguration().CreateLogger();
+                break;
+
         }
         return logger;
     }
