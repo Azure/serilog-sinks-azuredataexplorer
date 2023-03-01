@@ -127,7 +127,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                     rollingInterval: options.BufferFileRollingInterval,
                     rollOnFileSizeLimit: true,
                     retainedFileCountLimit: options.BufferFileCountLimit,
-                    encoding: Encoding.UTF8
+                    encoding: Encoding.UTF8,
+                    shared: true
                 ).CreateLogger();
 
             var payloadReader = new AzureDataExplorerPayloadReader(
