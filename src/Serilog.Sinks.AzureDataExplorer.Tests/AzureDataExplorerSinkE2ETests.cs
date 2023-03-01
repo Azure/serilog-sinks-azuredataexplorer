@@ -105,10 +105,10 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         var randomInt = new Random().Next();
         if (String.Equals(runMode, "durable"))
         {
-            m_bufferBaseFileName = Directory.GetCurrentDirectory() + "/" + randomInt + "/logger-buffer";
-            if (!Directory.Exists(Directory.GetCurrentDirectory() + "/" + randomInt))
+            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt +Path.DirectorySeparatorChar+  "logger-buffer";
+            if (!Directory.Exists(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt))
             {
-                Directory.CreateDirectory(Directory.GetCurrentDirectory() + "/" + randomInt);
+                Directory.CreateDirectory(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt);
             }
         }
         Logger log = GetSerilogAdxSink(identifier);
@@ -132,14 +132,24 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(20000);
+        await Task.Delay(30000);
 
         if (String.Equals(runMode, "durable"))
         {
             int lineCount = 0;
-            foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + "/" + randomInt, "*.clef"))
+            foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt, "*.clef"))
             {
-                lineCount += System.IO.File.ReadLines(file).Count();
+                Stream stream = System.IO.File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                StreamReader streamReader = new StreamReader(stream);
+                string str = await streamReader.ReadToEndAsync();
+                int index = 0;
+                while (true)
+                {
+                    index = str.IndexOf(Environment.NewLine, index, StringComparison.Ordinal);
+                    if(index < 0) break;
+                    lineCount++;
+                    index++;
+                }
             }
             Assert.Equal(result, lineCount);
         }
