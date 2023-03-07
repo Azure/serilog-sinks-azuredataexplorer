@@ -13,6 +13,24 @@ namespace Serilog.Sinks.AzureDataExplorer;
  * appId : Application client Id
  * appKey : Application client key
  * tenant : Authority
+ *- The above mentioned parameters needs to be set as environment variables in the respective environments. 
+ 
+ * For Windows, in powershell set the following parameters
+
+ * $env:ingestionURI="<ingestionURI>"
+ * $env:databaseName="<databaseName>"
+ * $env:tableName="<tableName>"
+ * $env:appId="<appId>"
+ * $env:appKey="<appKey>"
+ * $env:tenant="<tenant"
+
+ * For Linux based environments, in terminal set the following parameters
+ * export ingestionURI="<ingestionURI>"
+ * export databaseName="<databaseName>"
+ * export tableName="<tableName>"
+ * export appId="<appId>"
+ * export appKey="<appKey>"
+ * export tenant="<tenant"
  */
 
 public class AzureDataExplorerSinkE2ETests : IDisposable

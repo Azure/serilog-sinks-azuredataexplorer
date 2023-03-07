@@ -45,11 +45,32 @@ Serilog-ADX connector provides a demo/sample application that can be used to qui
   - AppKey : Application key required for authentication.
   - Tenant : Tenant Id
   - BufferBaseFileName : If we require durability of our logs(ie we don't want to lose our logs incase of any connection failure to ADX cluster), Ex: C:/Users/logs/Serilog
-- Open a Powershell window, navigate to Serilog-ADX connector base folder run the following
+- The above mentioned parameters needs to be set as environment variables in the respective environments. 
+ 
+For Windows, in powershell set the following parameters
+
+```shell
+$env:ingestionURI="<ingestionURI>"
+$env:databaseName="<databaseName>"
+$env:tableName="<tableName>"
+$env:appId="<appId>"
+$env:appKey="<appKey>"
+$env:tenant="<tenant"
+```
+ For Linux based environments, in terminal set the following parameters
+```shell
+export ingestionURI="<ingestionURI>"
+export databaseName="<databaseName>"
+export tableName="<tableName>"
+export appId="<appId>"
+export appKey="<appKey>"
+export tenant="<tenant"
+```
+- Open a Powershell window, navigate to Serilog-ADX connector base folder and run the following command
 ```shell
 dotnet build src
 ```
-- Navigate to src/Serilog.Sinks.AzureDataExplorer.Samples/ folder and run the following
+- Navigate to src/Serilog.Sinks.AzureDataExplorer.Samples/ folder and run the following command
 ```shell
 dotnet run
  ```
