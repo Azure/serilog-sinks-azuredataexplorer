@@ -39,7 +39,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         }
 
         [Fact]
-        public void WriteBookmark_WritesFileSetPositionToFile()
+        public async Task WriteBookmark_WritesFileSetPositionToFileAsync()
         {
             // Arrange
             var tempFile = Path.GetTempFileName();
@@ -51,8 +51,10 @@ namespace Serilog.Sinks.AzureDataExplorer
                 bookmarkFile.WriteBookmark(fileSetPosition);
 
                 // Assert
-                var writtenText = System.IO.File.ReadAllText(tempFile, Encoding.UTF8);
-                Assert.Equal("456:::file2.txt", Regex.Replace(writtenText, @"\t|\n|\r", ""));
+                Stream stream = System.IO.File.Open(tempFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
+                StreamReader streamReader = new StreamReader(stream); 
+                string str = await streamReader.ReadToEndAsync();
+                Assert.Equal("456:::file2.txt", Regex.Replace(str, @"\t|\n|\r", ""));
             }
         }
 

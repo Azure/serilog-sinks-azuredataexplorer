@@ -1,4 +1,5 @@
-﻿using Serilog.Sinks.AzureDataExplorer.Extensions;
+﻿using Kusto.Cloud.Platform.Utils;
+using Serilog.Sinks.AzureDataExplorer.Extensions;
 
 namespace Serilog.Sinks.AzureDataExplorer
 {
@@ -12,23 +13,25 @@ namespace Serilog.Sinks.AzureDataExplorer
                 .WriteTo.Console()
                 .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                 {
-                    IngestionEndpointUri = "<ADXIngestionURL>",
-                    DatabaseName = "<databaseName>",
-                    TableName = "<tableName>",
-                    BufferBaseFileName = "<bufferFileName>",
+                    IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
+                    DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
+                    TableName = Environment.GetEnvironmentVariable("tableName"),
+                    FlushImmediately = Environment.GetEnvironmentVariable("flushImmediately").IsNotNullOrEmpty() && bool.Parse(Environment.GetEnvironmentVariable("flushImmediately")!),
+                    BufferBaseFileName = Environment.GetEnvironmentVariable("bufferBaseFileName"),
+                    BatchPostingLimit = 10,
+                    Period = TimeSpan.FromSeconds(5),
 
                     ColumnsMapping = new[]
                     {
                         new SinkColumnMapping { ColumnName ="Timestamp", ColumnType ="datetime", ValuePath = "$.Timestamp" } ,
                         new SinkColumnMapping { ColumnName ="Level", ColumnType ="string", ValuePath = "$.Level" } ,
                         new SinkColumnMapping { ColumnName ="Message", ColumnType ="string", ValuePath = "$.Message" } ,
-                        new SinkColumnMapping { ColumnName ="Exception", ColumnType ="string", ValuePath = "$.Exception" } ,
+                        new SinkColumnMapping { ColumnName ="Exception", ColumnType ="string", ValuePath = "$.Error" } ,
                         new SinkColumnMapping { ColumnName ="Properties", ColumnType ="dynamic", ValuePath = "$.Properties" } ,
                         new SinkColumnMapping { ColumnName ="Position", ColumnType ="dynamic", ValuePath = "$.Properties.Position" } ,
                         new SinkColumnMapping { ColumnName ="Elapsed", ColumnType ="int", ValuePath = "$.Properties.Elapsed" } ,
                     }
-                }.WithAadApplicationKey("<appId>", "<appKey>", "<tenant>"))
-                .CreateLogger();
+                }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"), Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant"))).CreateLogger();
 
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
