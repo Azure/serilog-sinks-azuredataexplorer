@@ -37,7 +37,7 @@ Serilog-ADX connector provides a demo/sample application that can be used to qui
 .create table Serilogs (Timestamp: datetime, Level: string, Message: string, Exception: string, Properties: dynamic, Position: dynamic, Elapsed: int)
 ```
 - Clone the Serilog-ADX connector git repo
-- Navigate to the src/Serilog.Sinks.AzureDataExplorer.Samples folder and open Program.cs. Provide values for the following
+- The following are the set of parameters which needs to be set as environment variables
   - IngestionEndPointUri : Ingest URL of ADX cluster created.
   - DatabaseName : The name of the database to which data should be ingested into.
   - TableName : The name of the table created (in our case Serilog)
