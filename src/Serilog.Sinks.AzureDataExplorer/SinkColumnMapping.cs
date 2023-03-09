@@ -1,4 +1,4 @@
-﻿namespace Serilog.Sinks.Azuredataexplorer
+﻿namespace Serilog.Sinks.AzureDataExplorer
 {
     public struct SinkColumnMapping
     {

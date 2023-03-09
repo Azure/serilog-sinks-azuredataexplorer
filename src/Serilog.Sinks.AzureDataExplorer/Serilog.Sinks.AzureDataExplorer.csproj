@@ -1,45 +1,43 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>Serilog.Sinks.Azuredataexplorer</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <IsPublishable>True</IsPublishable>
-    <LangVersion>10.0</LangVersion>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Authors>Sagui Itay</Authors>
-    <Company />
-    <Description>A Serilog sink that writes log events to an Azure Data Explorer (Kusto) cluster</Description>
-    <Copyright>Copyright © Sagui Itay 2022</Copyright>
-    <PackageProjectUrl>https://github.com/saguiitay/serilog-sinks-azuredataexplorer</PackageProjectUrl>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/saguiitay/serilog-sinks-azuredataexplorer</RepositoryUrl>
-    <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
-    <PackageReleaseNotes>
-Added GZip compression when sending data
-Improved options default values
-    </PackageReleaseNotes>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <SignAssembly>True</SignAssembly>
-    <DelaySign>False</DelaySign>
-    <Version>1.0.2</Version>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
-  </PropertyGroup>
-    
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <AssemblyOriginatorKeyFile>Serilog.Sinks.AzureDataExplorer.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageIcon>serilog-sink-icon.png</PackageIcon>
+    <PackageReleaseNotes>
+      Added GZip compression when sending data
+      Improved options default values
+      Added durability to the Azure Data Explorer Sink
+      Added Sample project
+      Added unit Tests
+      Added End To End Test cases</PackageReleaseNotes>
+    <AssemblyOriginatorKeyFile>adxSerilog.snk</AssemblyOriginatorKeyFile>
+    <PublicSign>true</PublicSign>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="$(PackageReadmeFile)" />
+    <None Remove="Serilog.Sinks.File" />
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="serilog-sink-icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="10.0.3" />
-    <PackageReference Include="serilog" Version="2.11.0" />
-    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.1" />
+    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" />
+    <PackageReference Include="serilog" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+    <PackageReference Include="Serilog.Formatting.Compact.Reader" />
+    <PackageReference Include="Serilog.Sinks.PeriodicBatching" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="System.IO" />
+    <PackageReference Include="System.IO.FileSystem" />
   </ItemGroup>
 
 </Project>

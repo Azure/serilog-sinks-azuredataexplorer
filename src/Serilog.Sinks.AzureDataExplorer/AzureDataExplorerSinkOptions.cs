@@ -1,14 +1,13 @@
 ﻿using System.Security.Cryptography.X509Certificates;
+using Serilog.Core;
 
-namespace Serilog.Sinks.Azuredataexplorer
+namespace Serilog.Sinks.AzureDataExplorer
 {
+    /// <summary>
+    /// class which contains attributes required to configure the sink
+    /// </summary>
     public class AzureDataExplorerSinkOptions
     {
-        public const string DefaultDatabaseName = "Diagnostics";
-        public const string DefaultTableName = "Logs";
-        public const string DefaultMappingName = "SerilogMapping";
-
-
         private int m_queueSizeLimit;
 
         ///<summary>
@@ -45,7 +44,7 @@ namespace Serilog.Sinks.Azuredataexplorer
         /// The name of the database to which data should be ingested to
         /// </summary>
         public string DatabaseName { get; set; }
-        
+
         /// <summary>
         /// The name of the table to which data should be ingested to
         /// </summary>
@@ -60,7 +59,10 @@ namespace Serilog.Sinks.Azuredataexplorer
         /// The explicit columns mapping to use for the ingested data
         /// </summary>
         public IEnumerable<SinkColumnMapping> ColumnsMapping { get; set; }
-        
+
+        /// <summary>
+        /// format provider to format log output
+        /// </summary>
         public IFormatProvider FormatProvider { get; set; }
 
         /// <summary>
@@ -68,37 +70,151 @@ namespace Serilog.Sinks.Azuredataexplorer
         /// </summary>
         public bool UseStreamingIngestion { get; set; }
 
+        /// <summary>
+        /// Enables the durable mode. when specified, the logs are written to the bufferFileName first and then ingested to ADX
+        /// </summary>
+        public string BufferBaseFileName { get; set; }
 
+        /// <summary>
+        /// specifies the output format for produced logs to be written to buffer file
+        /// </summary>
+        public string BufferFileOutputFormat { get; set; }
+
+        /// <summary>
+        /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Hour"/>.
+        /// </summary>
+        public RollingInterval BufferFileRollingInterval { get; set; }
+
+        /// <summary>
+        /// The interval between checking the buffer files.
+        /// </summary>
+        public TimeSpan? BufferLogShippingInterval { get; set; }
+
+        ///<summary>
+        /// The maximum length of a an event record to be sent. Defaults to: null (No Limit) only used in file buffer mode
+        /// </summary>
+        public long? SingleEventSizePostingLimit { get; set; }
+
+        /// <summary>
+        /// The maximum size, in bytes, to which the buffer log file for a specific date will be allowed to grow. By default 100L * 1024 * 1024 will be applied.
+        /// </summary>
+        public long? BufferFileSizeLimitBytes { get; set; }
+
+        /// <summary>
+        /// A switch allowing the pass-through minimum level to be changed at runtime. 
+        /// </summary>
+        public LoggingLevelSwitch BufferFileLoggingLevelSwitch { get; set; }
+
+        /// <summary>
+        /// The maximum number of log files that will be retained,
+        /// including the current log file. For unlimited retention, pass null. The default is 31.
+        /// </summary>
+        public int? BufferFileCountLimit { get; set; }
+
+        /// <summary>
+        /// This property determines whether it is needed to flush the data immediately to ADX cluster,
+        /// The default is false.
+        /// </summary>
+        public bool FlushImmediately { get; set; }
+
+        /// <summary>
+        /// determines the authentication mode
+        /// </summary>
         public AuthenticationMode AuthenticationMode { get; private set; }
+
+        /// <summary>
+        /// user token
+        /// </summary>
         public string UserToken { get; private set; }
+
+        /// <summary>
+        /// application token
+        /// </summary>
         public string ApplicationToken { get; private set; }
+
+        /// <summary>
+        /// application clientId
+        /// </summary>
         public string ApplicationClientId { get; private set; }
+
+        /// <summary>
+        /// ApplicationCertificateThumbprint
+        /// </summary>
         public string ApplicationCertificateThumbprint { get; private set; }
+
+        /// <summary>
+        /// ApplicationCertificateSubjectDistinguishedName
+        /// </summary>
         public string ApplicationCertificateSubjectDistinguishedName { get; private set; }
+
+        /// <summary>
+        /// ApplicationKey
+        /// </summary>
         public string ApplicationKey { get; private set; }
+
+        /// <summary>
+        /// ApplicationCertificate
+        /// </summary>
         public X509Certificate2 ApplicationCertificate { get; private set; }
+
+        /// <summary>
+        /// Authority
+        /// </summary>
         public string Authority { get; private set; }
-        public bool SendX5c { get; private set; }
+
+        /// <summary>
+        /// SendX5C
+        /// </summary>
+        public bool SendX5C { get; private set; }
+
+        /// <summary>
+        /// AzureRegion
+        /// </summary>
         public string AzureRegion { get; private set; }
+
+        /// <summary>
+        /// TokenCredential
+        /// </summary>
         public Azure.Core.TokenCredential TokenCredential { get; private set; }
 
         public AzureDataExplorerSinkOptions()
         {
-            Period = TimeSpan.FromSeconds(10);
-            BatchPostingLimit = 1000;
-            QueueSizeLimit = 100000;
+            this.Period = TimeSpan.FromSeconds(10);
+            this.BatchPostingLimit = 1000;
+            this.QueueSizeLimit = 100000;
+            this.BufferFileRollingInterval = RollingInterval.Hour;
+            this.BufferFileCountLimit = 20;
+            this.BufferFileSizeLimitBytes = 10L * 1024 * 1024;
+            this.BufferFileOutputFormat =
+                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+            this.FlushImmediately = false;
         }
 
         #region Authentication builder methods
-        public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority, bool sendX5c = false, string azureRegion = null)
+
+        public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority,
+            bool sendX5C = false, string azureRegion = null)
         {
             AuthenticationMode = AuthenticationMode.AadApplicationCertificate;
             ApplicationClientId = applicationClientId;
             ApplicationCertificate = applicationCertificate;
             Authority = authority;
-            SendX5c = sendX5c;
+            SendX5C = sendX5C;
             AzureRegion = azureRegion;
 
+            return this;
+        }
+
+        public AzureDataExplorerSinkOptions WithAadSystemAssignedManagedIdentity()
+        {
+            AuthenticationMode = AuthenticationMode.AadSystemManagedIdentity;
+            return this;
+        }
+
+        public AzureDataExplorerSinkOptions WithAadUserAssignedManagedIdentity(string applicationClientId)
+        {
+            AuthenticationMode = AuthenticationMode.AadUserManagedIdentity;
+            ApplicationClientId = applicationClientId;
             return this;
         }
 
@@ -112,7 +228,8 @@ namespace Serilog.Sinks.Azuredataexplorer
             return this;
         }
 
-        public AzureDataExplorerSinkOptions WithAadApplicationSubjectName(string applicationClientId, string applicationCertificateSubjectDistinguishedName, string authority, string azureRegion = null)
+        public AzureDataExplorerSinkOptions WithAadApplicationSubjectName(string applicationClientId, string applicationCertificateSubjectDistinguishedName,
+            string authority, string azureRegion = null)
         {
             AuthenticationMode = AuthenticationMode.AadApplicationSubjectName;
             ApplicationClientId = applicationClientId;
@@ -156,6 +273,7 @@ namespace Serilog.Sinks.Azuredataexplorer
 
             return this;
         }
+
         #endregion
     }
 
@@ -168,7 +286,8 @@ namespace Serilog.Sinks.Azuredataexplorer
         AadApplicationSubjectName,
         AadApplicationThumbprint,
         AadApplicationToken,
-        AadAzureTokenCredentials
+        AadAzureTokenCredentials,
+        AadUserManagedIdentity,
+        AadSystemManagedIdentity
     }
-
 }
