@@ -37,7 +37,7 @@ Improved options default values
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.3.1" />
     <PackageReference Include="serilog" Version="2.11.0" />
     <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.1" />
   </ItemGroup>
