@@ -1,0 +1,37 @@
+﻿<Project>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Serilog.Sinks.AzureDataExplorer</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPublishable>True</IsPublishable>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+    <DebugSymbols>true</DebugSymbols>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <Authors>Microsoft</Authors>
+    <Company>Microsoft Corporation</Company>
+    <Description>A Serilog sink that writes log events to an Azure Data Explorer (Kusto) cluster</Description>
+    <Copyright>Copyright © Microsoft Corporation 2022</Copyright>
+    <PackageProjectUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</RepositoryUrl>
+    <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
+    <PackageReleaseNotes>
+      Added GZip compression when sending data
+      Improved options default values
+      Added durability to the Azure Data Explorer Sink
+      Added Sample project
+      Added Tests
+    </PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <SignAssembly>True</SignAssembly>
+    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
+  </PropertyGroup>
+</Project>

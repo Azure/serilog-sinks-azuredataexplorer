@@ -1,86 +1,134 @@
 ﻿using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.IO;
 using Serilog.Events;
-using Serilog.Sinks.Azuredataexplorer;
-using Serilog.Sinks.Azuredataexplorer.Extensions;
+using Serilog.Sinks.AzureDataExplorer.Extensions;
 using Serilog.Sinks.PeriodicBatching;
 
-namespace Serilog.Sinks.AzureDataExplorer
+[assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests,PublicKey=" + "002400000480000094000000060200000024000052534131000400000100010025d2229d740f195c0a4cdcb468a4ed69c33a9f2738727a6c34a80ab8b75263a33bd5ac958f0e8b82658a7ee429cc4536166a7ac908691c600a84b20a67db8f5324f43a168a93665f6b449588d2168d6189a27f41bf7b95e6cd1f184bf6f9f9020429972e3132f34f60777ff25edd96d0527d88d2adb4dffa4ed31016aa6cc5b0")]
+
+namespace Serilog.Sinks.AzureDataExplorer.Sinks
 {
-    internal class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
+    internal sealed class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
     {
-        private static readonly RecyclableMemoryStreamManager s_recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
-        private static readonly List<ColumnMapping> s_defaultIngestionColumnMapping = new List<ColumnMapping>
+        private static readonly RecyclableMemoryStreamManager SRecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+
+        private static readonly List<ColumnMapping> SDefaultIngestionColumnMapping = new List<ColumnMapping>
         {
-            new ColumnMapping { ColumnName = "Timestamp", ColumnType = "datetime", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Timestamp" } } },
-            new ColumnMapping { ColumnName = "Level", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Level" } } },
-            new ColumnMapping { ColumnName = "Message", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Message" } } },
-            new ColumnMapping { ColumnName = "Exception", ColumnType = "string", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Exception" } } },
-            new ColumnMapping { ColumnName = "Properties", ColumnType = "dynamic", Properties = new Dictionary<string, string>{{ MappingConsts.Path, "$.Properties" } } },
+            new ColumnMapping
+            {
+                ColumnName = "Timestamp",
+                ColumnType = "datetime",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Timestamp"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Level",
+                ColumnType = "string",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Level"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Message",
+                ColumnType = "string",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Message"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Exception",
+                ColumnType = "string",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Exception"
+                    }
+                }
+            },
+            new ColumnMapping
+            {
+                ColumnName = "Properties",
+                ColumnType = "dynamic",
+                Properties = new Dictionary<string, string>
+                {
+                    {
+                        MappingConsts.Path, "$.Properties"
+                    }
+                }
+            },
         };
 
         private readonly IFormatProvider m_formatProvider;
         private readonly string m_databaseName;
         private readonly string m_tableName;
-        private readonly string m_mappingName;
 
+        private readonly bool m_flushImmediately;
+        private readonly bool m_streamingIngestion;
         private readonly IngestionMapping m_ingestionMapping;
-        //private KustoIngestionProperties m_kustoIngestionProperties;
-        //private StreamSourceOptions m_streamSourceOptions;
-
-        private IKustoIngestClient m_queuedIngestClient;
-
+        private IKustoIngestClient m_ingestClient;
         private bool m_disposed;
 
         public AzureDataExplorerSink(AzureDataExplorerSinkOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (options.DatabaseName == null)
-            {
-                throw new ArgumentNullException(nameof(options.DatabaseName));
-            }
-            if (options.TableName == null)
-            {
-                throw new ArgumentNullException(nameof(options.TableName));
-            }
-            if (options.IngestionEndpointUri == null)
-            {
-                throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
-            }
-
+            if (options == null) throw new ArgumentNullException(nameof(options));
+            m_databaseName = options.DatabaseName ?? throw new ArgumentNullException(nameof(options.DatabaseName));
+            m_tableName = options.TableName ?? throw new ArgumentNullException(nameof(options.TableName));
+            if (options.IngestionEndpointUri == null) throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
             m_formatProvider = options.FormatProvider;
-            m_databaseName = options.DatabaseName;
-            m_tableName = options.TableName;
-            m_mappingName = options.MappingName;
+            var mappingName = options.MappingName;
+            m_flushImmediately = options.FlushImmediately;
+            m_streamingIngestion = options.UseStreamingIngestion;
 
             m_ingestionMapping = new IngestionMapping();
-            if (!string.IsNullOrEmpty(m_mappingName))
+            if (!string.IsNullOrEmpty(mappingName))
             {
-                m_ingestionMapping.IngestionMappingReference = m_mappingName;
+                m_ingestionMapping.IngestionMappingReference = mappingName;
             }
             else if (options.ColumnsMapping?.Any() == true)
             {
-                m_ingestionMapping.IngestionMappings = options.ColumnsMapping.Select(m => new ColumnMapping { ColumnName = m.ColumnName, ColumnType = m.ColumnType, Properties = new Dictionary<string, string>(1) { { MappingConsts.Path, m.ValuePath } } }).ToList();
+                m_ingestionMapping.IngestionMappings = options.ColumnsMapping.Select(m => new ColumnMapping
+                {
+                    ColumnName = m.ColumnName,
+                    ColumnType = m.ColumnType,
+                    Properties = new Dictionary<string, string>(1)
+                    {
+                        {
+                            MappingConsts.Path, m.ValuePath
+                        }
+                    }
+                }).ToList();
             }
             else
             {
-                m_ingestionMapping.IngestionMappings = s_defaultIngestionColumnMapping;
+                m_ingestionMapping.IngestionMappings = SDefaultIngestionColumnMapping;
             }
 
             var kcsb = options.GetKustoConnectionStringBuilder();
+            var engineKcsb = options.GetKustoEngineConnectionStringBuilder();
 
             if (options.UseStreamingIngestion)
             {
-                m_queuedIngestClient = KustoIngestFactory.CreateStreamingIngestClient(kcsb);
+                m_ingestClient = KustoIngestFactory.CreateManagedStreamingIngestClient(engineKcsb, kcsb);
             }
             else
             {
-                m_queuedIngestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
+                m_ingestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
             }
         }
 
@@ -88,20 +136,37 @@ namespace Serilog.Sinks.AzureDataExplorer
         {
             using (var dataStream = CreateStreamFromLogEvents(batch))
             {
-                var result = await m_queuedIngestClient.IngestFromStreamAsync(
-                    dataStream,
-                    new KustoIngestionProperties
-                    {
-                        DatabaseName = m_databaseName,
-                        TableName = m_tableName,
-                        Format = DataSourceFormat.multijson,
-                        IngestionMapping = m_ingestionMapping
-                    },
-                    new StreamSourceOptions
-                    {
-                        LeaveOpen = false,
-                        CompressionType = DataSourceCompressionType.GZip
-                    }).ConfigureAwait(false);
+                var sourceId = Guid.NewGuid();
+                if (!m_streamingIngestion)
+                {
+                    await m_ingestClient.IngestFromStreamAsync(
+                        dataStream,
+                        new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
+                        {
+                            DatabaseName = m_databaseName,
+                            TableName = m_tableName,
+                            FlushImmediately = m_flushImmediately,
+                            Format = DataSourceFormat.multijson,
+                            IngestionMapping = m_ingestionMapping
+                        },
+                        new StreamSourceOptions
+                        {
+                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
+                        }).ConfigureAwait(false);
+                }
+                else
+                {
+                    await m_ingestClient.IngestFromStreamAsync(
+                        dataStream,
+                        new KustoIngestionProperties()
+                        {
+                            DatabaseName = m_databaseName, TableName = m_tableName, Format = DataSourceFormat.multijson, IngestionMapping = m_ingestionMapping
+                        },
+                        new StreamSourceOptions
+                        {
+                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
+                        }).ConfigureAwait(false);
+                }
             }
         }
 
@@ -112,7 +177,7 @@ namespace Serilog.Sinks.AzureDataExplorer
 
         private Stream CreateStreamFromLogEvents(IEnumerable<LogEvent> batch)
         {
-            var stream = s_recyclableMemoryStreamManager.GetStream();
+            var stream = SRecyclableMemoryStreamManager.GetStream();
             {
                 using (GZipStream compressionStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true))
                 {
@@ -128,13 +193,14 @@ namespace Serilog.Sinks.AzureDataExplorer
         }
 
         #region IDisposable methods
+
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (m_disposed)
             {
@@ -143,12 +209,13 @@ namespace Serilog.Sinks.AzureDataExplorer
 
             if (disposing)
             {
-                m_queuedIngestClient?.Dispose();
-                m_queuedIngestClient = null;
+                m_ingestClient?.Dispose();
+                m_ingestClient = null;
             }
 
             m_disposed = true;
         }
+
         #endregion
     }
 }
