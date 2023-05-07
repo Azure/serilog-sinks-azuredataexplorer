@@ -7,6 +7,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
     //The private implementation section includes methods for converting the data and simplifying the structure of the resulting dictionary.
     internal static class LogEventExtensions
     {
+        private const string SourceContextPropertyName = "SourceContext";
+
         internal static string Json(this LogEvent logEvent, IFormatProvider formatProvider = null)
         {
             return System.Text.Json.JsonSerializer.Serialize(ConvertToDictionary(logEvent, formatProvider));
@@ -27,6 +29,41 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
         internal static IDictionary<string, object> Dictionary(this IReadOnlyDictionary<string, LogEventPropertyValue> properties)
         {
             return ConvertToDictionary(properties);
+        }
+
+        /// <summary>
+        /// Get the table name based on table name mappings or return the default table name
+        /// </summary>
+        /// <param name="logEvent">The log event to evaluate against</param>
+        /// <param name="tableNameMappings">The table name mappings</param>
+        /// <param name="defaultTableName">The default table name</param>
+        /// <returns></returns>
+        internal static string GetTableName(this LogEvent logEvent, IReadOnlyDictionary<string, string> tableNameMappings, string defaultTableName)
+        {
+            if (tableNameMappings == null || tableNameMappings.Count == 0)
+            {
+                return defaultTableName;
+            }
+
+            if (logEvent.Properties == null || logEvent.Properties.Count == 0)
+            {
+                return defaultTableName;
+            }
+
+            if (logEvent.Properties.ContainsKey(SourceContextPropertyName))
+            {
+                var sourceContextPropertyValue = logEvent.Properties[SourceContextPropertyName];
+                if (sourceContextPropertyValue != null && sourceContextPropertyValue is ScalarValue scalarValue && scalarValue.Value != null)
+                {
+                    var sourceContext = scalarValue.Value.ToString();
+                    if (!string.IsNullOrWhiteSpace(sourceContext) && tableNameMappings.ContainsKey(sourceContext))
+                    {
+                        return tableNameMappings[sourceContext];
+                    }
+                }
+            }
+
+            return defaultTableName;
         }
 
         #region Private implementation

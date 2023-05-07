@@ -147,6 +147,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                 formatProvider: formatProvider,
                 databaseName: databaseName,
                 tableName: tableName,
+                tableNameMappings: options.TableNameMappings,
                 ingestionMapping: ingestionMapping,
                 flushImmediately: flushImmediately
             );

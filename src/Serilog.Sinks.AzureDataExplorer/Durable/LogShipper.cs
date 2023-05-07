@@ -50,6 +50,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         private readonly IFormatProvider m_formatProvider;
         private readonly string m_databaseName;
         private readonly string m_tableName;
+        private readonly IReadOnlyDictionary<string, string> m_tableNameMappings;
         private readonly IngestionMapping m_ingestionMapping;
         private readonly bool m_flushImmediately;
 
@@ -73,6 +74,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         /// <param name="formatProvider"></param>
         /// <param name="databaseName"></param>
         /// <param name="tableName"></param>
+        /// <param name="tableNameMappings"></param>
         /// <param name="ingestionMapping"></param>
         public LogShipper(
             string bufferBaseFilename,
@@ -86,6 +88,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             IFormatProvider formatProvider,
             string databaseName,
             string tableName,
+            IReadOnlyDictionary<string, string> tableNameMappings,
             IngestionMapping ingestionMapping,
             bool flushImmediately,
             RollingInterval rollingInterval = RollingInterval.Hour)
@@ -102,6 +105,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             m_formatProvider = formatProvider;
             m_databaseName = databaseName;
             m_tableName = tableName;
+            m_tableNameMappings = tableNameMappings;
             m_ingestionMapping = ingestionMapping;
             m_flushImmediately = flushImmediately;
             SetTimer();
@@ -156,42 +160,43 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                 do
                 {
                     count = 0;
-                    using (var bookmarkFile = m_fileSet.OpenBookmarkFile())
+                    using var bookmarkFile = m_fileSet.OpenBookmarkFile();
+                    var position = bookmarkFile.TryReadBookmark();
+                    var files = m_fileSet.GetBufferFiles();
+
+                    if (position.File == null || !IOFile.Exists(position.File))
                     {
-                        var position = bookmarkFile.TryReadBookmark();
-                        var files = m_fileSet.GetBufferFiles();
+                        position = new FileSetPosition(0, files.FirstOrDefault());
+                    }
 
-                        if (position.File == null || !IOFile.Exists(position.File))
-                        {
-                            position = new FileSetPosition(0, files.FirstOrDefault());
-                        }
+                    TPayload payload;
+                    if (position.File == null)
+                    {
+                        payload = m_payloadReader.GetNoPayload();
+                        count = 0;
+                    }
+                    else
+                    {
+                        payload = m_payloadReader.ReadPayload(m_batchPostingLimit, m_eventBodyLimitBytes, ref position, ref count, position.File);
+                    }
 
-                        TPayload payload;
-                        if (position.File == null)
-                        {
-                            payload = m_payloadReader.GetNoPayload();
-                            count = 0;
-                        }
-                        else
-                        {
-                            payload = m_payloadReader.ReadPayload(m_batchPostingLimit, m_eventBodyLimitBytes, ref position, ref count, position.File);
-                        }
+                    var stopWatch = Stopwatch.StartNew();
 
-                        var stopWatch = Stopwatch.StartNew();
-                        var fileIdentifier = Guid.NewGuid();
-
-                        if (count > 0 || m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow)
+                    if (count > 0 || m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow)
+                    {
+                        var results = new Dictionary<Guid, IKustoIngestionResult>();
+                        m_nextRequiredLevelCheckUtc = DateTime.UtcNow.Add(RequiredLevelCheckInterval);
+                        foreach (var dataStreamWithTableName in CreateStreamFromLogEvents(payload))
                         {
-                            IKustoIngestionResult result;
-                            m_nextRequiredLevelCheckUtc = DateTime.UtcNow.Add(RequiredLevelCheckInterval);
-                            using (var dataStream = CreateStreamFromLogEvents(payload))
+                            var fileIdentifier = Guid.NewGuid();
+                            using (dataStreamWithTableName)
                             {
-                                result = await m_ingestClient.IngestFromStreamAsync(
-                                    dataStream,
+                                var result = await m_ingestClient.IngestFromStreamAsync(
+                                    dataStreamWithTableName.Stream,
                                     new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
                                     {
                                         DatabaseName = m_databaseName,
-                                        TableName = m_tableName,
+                                        TableName = dataStreamWithTableName.TableName,
                                         FlushImmediately = m_flushImmediately,
                                         Format = DataSourceFormat.multijson,
                                         IngestionMapping = m_ingestionMapping,
@@ -200,71 +205,76 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                     },
                                     new StreamSourceOptions
                                     {
-                                        LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip, SourceId = fileIdentifier
+                                        LeaveOpen = false,
+                                        CompressionType = DataSourceCompressionType.GZip,
+                                        SourceId = fileIdentifier
                                     }).ConfigureAwait(false);
-                            }
-                            var ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
 
-                            while (true) //loop until the record is updated or we timeout
-                            {
-                                // check if the record is updated
-                                if (ingestionStatus.Status != Status.Pending)
-                                {
-                                    break; // the record is updated, so we can exit the loop!
-                                }
-
-                                // check if we have exceeded our timeout
-                                if (stopWatch.Elapsed > Timeout)
-                                {
-                                    break; // break loop if we timed out
-                                }
-
-                                // the record isn't updated & we haven't timed out, so the 
-                                // loop will repeat. we're worried about querying the DB 
-                                // too often, so we add a delay. this will work a lot like 
-                                // a timer, but it is async and avoids reentrancy issues.
-                                await Task.Delay(TimeBetweenChecks);
-                                ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
-                            }
-
-                            if (ingestionStatus.Status == Status.Succeeded)
-                            {
-                                m_connectionSchedule.MarkSuccess();
-                                bookmarkFile.WriteBookmark(position);
-                            }
-                            else
-                            {
-                                m_connectionSchedule.MarkFailure();
-                                if (m_bufferSizeLimitBytes.HasValue)
-                                    m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
-
-                                break;
+                                results.Add(fileIdentifier, result);
                             }
                         }
-                        else if (position.File == null)
+
+                        var ingestionStatus = results.Select(i => i.Value.GetIngestionStatusBySourceId(i.Key)).ToList();
+
+                        while (true) //loop until the record is updated or we timeout
                         {
-                            break;
+                            // check if the record is updated
+                            if (ingestionStatus.All(s => s.Status != Status.Pending))
+                            {
+                                break; // the record is updated, so we can exit the loop!
+                            }
+
+                            // check if we have exceeded our timeout
+                            if (stopWatch.Elapsed > Timeout)
+                            {
+                                break; // break loop if we timed out
+                            }
+
+                            // the record isn't updated & we haven't timed out, so the 
+                            // loop will repeat. we're worried about querying the DB 
+                            // too often, so we add a delay. this will work a lot like 
+                            // a timer, but it is async and avoids reentrancy issues.
+                            await Task.Delay(TimeBetweenChecks);
+                            ingestionStatus = results.Select(i => i.Value.GetIngestionStatusBySourceId(i.Key)).ToList();
+                        }
+
+                        if (ingestionStatus.All(s => s.Status == Status.Succeeded))
+                        {
+                            m_connectionSchedule.MarkSuccess();
+                            bookmarkFile.WriteBookmark(position);
                         }
                         else
                         {
-                            // For whatever reason, there's nothing waiting to send. This means we should try connecting again at the
-                            // regular interval, so mark the attempt as successful.
-                            m_connectionSchedule.MarkSuccess();
+                            m_connectionSchedule.MarkFailure();
+                            if (m_bufferSizeLimitBytes.HasValue)
+                                m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
 
-                            // Only advance the bookmark if no other process has the
-                            // current file locked, and its length is as we found it.
-                            if (files.Length == 2 && files.First() == position.File &&
-                                FileIsUnlockedAndUnextended(position))
-                            {
-                                bookmarkFile.WriteBookmark(new FileSetPosition(0, files[1]));
-                            }
+                            break;
+                        }
+                    }
+                    else if (position.File == null)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        // For whatever reason, there's nothing waiting to send. This means we should try connecting again at the
+                        // regular interval, so mark the attempt as successful.
+                        m_connectionSchedule.MarkSuccess();
 
-                            if (files.Length > 2)
-                            {
-                                // By this point, we expect writers to have relinquished locks
-                                // on the oldest file.
-                                IOFile.Delete(files[0]);
-                            }
+                        // Only advance the bookmark if no other process has the
+                        // current file locked, and its length is as we found it.
+                        if (files.Length == 2 && files.First() == position.File &&
+                            FileIsUnlockedAndUnextended(position))
+                        {
+                            bookmarkFile.WriteBookmark(new FileSetPosition(0, files[1]));
+                        }
+
+                        if (files.Length > 2)
+                        {
+                            // By this point, we expect writers to have relinquished locks
+                            // on the oldest file.
+                            IOFile.Delete(files[0]);
                         }
                     }
                 } while (count == m_batchPostingLimit);
@@ -308,14 +318,35 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             return false;
         }
 
-        private Stream CreateStreamFromLogEvents(TPayload batch)
+        private IEnumerable<LogStreamWithTableName> CreateStreamFromLogEvents(TPayload batch)
         {
             List<LogEvent> payloadBatch = (List<LogEvent>)Convert.ChangeType(batch, typeof(List<LogEvent>));
+            if (m_tableNameMappings == null || m_tableNameMappings.Count == 0)
+            {
+                yield return new LogStreamWithTableName(m_tableName, CreateStreamFromLogEvents(payloadBatch));
+            }
+            else
+            {
+                var tableMappedLogEvents = payloadBatch.Select(l => new LogEntryWithTableName
+                {
+                    Log = l,
+                    TableName = l.GetTableName(m_tableNameMappings, m_tableName),
+                }).GroupBy(l => l.TableName);
+
+                foreach (var group in tableMappedLogEvents)
+                {
+                    yield return new LogStreamWithTableName(group.Key, CreateStreamFromLogEvents(group.Select(l => l.Log)));
+                }
+            }
+        }
+
+        private Stream CreateStreamFromLogEvents(IEnumerable<LogEvent> batch)
+        {
             var stream = new RecyclableMemoryStreamManager().GetStream();
             {
                 using (GZipStream compressionStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true))
                 {
-                    foreach (var logEvent in payloadBatch)
+                    foreach (var logEvent in batch)
                     {
                         System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary());
                     }
