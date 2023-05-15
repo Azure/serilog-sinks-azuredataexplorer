@@ -21,6 +21,7 @@
       <None Remove="Serilog.Sinks.File" />
     </ItemGroup>
     <ItemGroup>
+      <Folder Include="Properties\" />
       <Folder Include="Samples" />
     </ItemGroup>
 </Project>
