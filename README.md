@@ -23,7 +23,7 @@ Configuration when durable mode is not required
 
 ```csharp
 var log = new LoggerConfiguration()
-    .WriteTo.AzureDataExplorer(new AzureDataExplorerSinkOptions
+    .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
     {
         IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
         DatabaseName = "MyDatabase",
@@ -36,7 +36,7 @@ Configuration when durable mode is required
 
 ```csharp
 var log = new LoggerConfiguration()
-    .WriteTo.AzureDataExplorer(new AzureDataExplorerSinkOptions
+    .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
     {
         IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
         DatabaseName = "MyDatabase",
