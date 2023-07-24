@@ -33,12 +33,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 ClientVersionForTracing = $"{AppName}:{ClientVersion}"
             };
-            var kcsb = options.AuthenticationMode switch
-            {
-                AuthenticationMode.AadSystemManagedIdentity => baseKcsb.WithAadSystemManagedIdentity(),
-                AuthenticationMode.AadUserManagedIdentity => baseKcsb.WithAadUserManagedIdentity(options.ApplicationClientId),
-                _ => baseKcsb,
-            };
+            var kcsb = string.IsNullOrEmpty(options.ManagedIdentity) ? baseKcsb : ("system".Equals(options.ManagedIdentity, StringComparison.OrdinalIgnoreCase) ? baseKcsb.WithAadSystemManagedIdentity() : baseKcsb.WithAadUserManagedIdentity(options.ManagedIdentity));
             kcsb.ApplicationNameForTracing = AppName;
             kcsb.ClientVersionForTracing = ClientVersion;
             kcsb.SetConnectorDetails(AppName, ClientVersion, "Serilog", "2.12.0");

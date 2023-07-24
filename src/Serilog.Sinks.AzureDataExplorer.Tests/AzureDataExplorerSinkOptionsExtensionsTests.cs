@@ -13,28 +13,32 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
         {
             ConnectionString = "https://ingestion-endpoint-uri",
             DatabaseName = "database-name",
-            TableName = "table-name"
-        }.WithAadSystemAssignedManagedIdentity();
-
+            TableName = "table-name",
+            ManagedIdentity = "system"
+        };
         var kcsb = options.GetIngestKcsb();
         var connectionString = kcsb.ToString();
         Assert.NotNull(kcsb);
         Assert.NotEmpty(connectionString);
+        Assert.Equal("system", kcsb.EmbeddedManagedIdentity);
     }
 
     [Fact]
     public void GetKustoConnectionStringBuilder_AadUserManagedIdentity_ReturnsExpectedConnectionString()
     {
+        var userManagedIdentity = Guid.NewGuid().ToString();
         var options = new AzureDataExplorerSinkOptions
         {
             ConnectionString = "https://ingestion-endpoint-uri",
             DatabaseName = "database-name",
-            TableName = "table-name"
-        }.WithAadUserAssignedManagedIdentity(Guid.NewGuid().ToString());
+            TableName = "table-name",
+            ManagedIdentity = userManagedIdentity
+        };
         var kcsb = options.GetIngestKcsb();
         var connectionString = kcsb.ToString();
         Assert.NotNull(kcsb);
         Assert.NotEmpty(connectionString);
+        Assert.Equal(userManagedIdentity, kcsb.EmbeddedManagedIdentity);
     }
 
 

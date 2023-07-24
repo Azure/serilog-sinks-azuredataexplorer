@@ -118,14 +118,9 @@ namespace Serilog.Sinks.AzureDataExplorer
         public bool FlushImmediately { get; set; }
 
         /// <summary>
-        /// determines the authentication mode
-        /// </summary>
-        public AuthenticationMode AuthenticationMode { get; private set; }
-
-        /// <summary>
         /// application clientId
         /// </summary>
-        public string ApplicationClientId { get; private set; }
+        public string ManagedIdentity { get; set; }
 
         public AzureDataExplorerSinkOptions()
         {
@@ -139,29 +134,6 @@ namespace Serilog.Sinks.AzureDataExplorer
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
             FlushImmediately = false;
             // The default uses this, so that other modes are not attempted
-            AuthenticationMode = AuthenticationMode.KustoConnectionString;
         }
-
-        #region Authentication builder methods
-        public AzureDataExplorerSinkOptions WithAadSystemAssignedManagedIdentity()
-        {
-            AuthenticationMode = AuthenticationMode.AadSystemManagedIdentity;
-            return this;
-        }
-
-        public AzureDataExplorerSinkOptions WithAadUserAssignedManagedIdentity(string applicationClientId)
-        {
-            AuthenticationMode = AuthenticationMode.AadUserManagedIdentity;
-            ApplicationClientId = applicationClientId;
-            return this;
-        }
-        #endregion
-    }
-
-    public enum AuthenticationMode
-    {
-        AadUserManagedIdentity,
-        AadSystemManagedIdentity,
-        KustoConnectionString
     }
 }
