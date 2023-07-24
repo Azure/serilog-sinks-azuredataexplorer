@@ -55,6 +55,7 @@ var log = new LoggerConfiguration()
 * Supports [Azure Data Explorer](https://docs.microsoft.com/en-us/azure/data-explorer),
   [Azure Synapse Data Explorer](https://docs.microsoft.com/en-us/azure/synapse-analytics/data-explorer/data-explorer-overview) and
   [Azure Data Explorer Free-Tier](https://docs.microsoft.com/en-us/azure/data-explorer/start-for-free)
+  [Real Time Analytics Platform](https://learn.microsoft.com/en-us/fabric/real-time-analytics/overview)
 
 ## Options
 
@@ -108,22 +109,26 @@ Durable mode can be turned on when we specify the bufferFileName in the LoggerCo
 
 ### Authentication
 
-The sink supports authentication using various methods. Use one of the following methods to configure the desired authentication methods:
+The sink supports authentication using various methods. These are configured through the [connection string](https://github.com/MicrosoftDocs/dataexplorer-docs/blob/main/data-explorer/kusto/api/connection-strings/kusto.md) options provided.
+
+The following provide examples of these options : 
 
 ```csharp
-new AzureDataExplorerSinkOptions()
-    .WithXXX(...)
+new AzureDataExplorerSinkOptions(
+    ConnectionString=$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;AppClientId={appId};AppKey={appKey};Authority Id={authority}"
+)
 ```
-
-| Mode                      | Method                        | Notes                             |
-|---------------------------|-------------------------------|-----------------------------------|
-| AadUserPrompt             | WithAadUserPrompt             | **Recommended only development!** |
-| AadUserToken              | WithAadUserToken              |                                   |
-| AadApplicationCertificate | WithAadApplicationCertificate |                                   |
-| AadApplicationKey         | WithAadApplicationKey         |                                   |
-| AadApplicationSubjectName | WithAadApplicationSubjectName |                                   |
-| AadApplicationThumbprint  | WithAadApplicationThumbprint  |                                   |
-| AadApplicationToken       | WithAadApplicationToken       |                                   |
-| AadAzureTokenCredentials  | WithAadAzureTokenCredentials  |                                   |
-| AadUserManagedIdentity    | WithAadUserManagedIdentity    |                                   |
-| AadSystemManagedIdentity  | WithAadSystemManagedIdentity    |                                   |
+To use SystemManagedIdentity:
+```csharp
+new AzureDataExplorerSinkOptions(
+    ConnectionString=$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;",
+    ManagedIdentity="system"
+)
+```
+Set the MI client Id (GUID) for user-assigned managed identity :
+```csharp
+new AzureDataExplorerSinkOptions(
+    ConnectionString=$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;",
+    ManagedIdentity="362b9e3c-b4d4-43aa-9be9-bbf306fb7481"
+)   
+```
