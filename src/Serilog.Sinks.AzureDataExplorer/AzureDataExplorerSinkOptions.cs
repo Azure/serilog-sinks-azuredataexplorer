@@ -38,7 +38,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// <summary>
         /// Azure Data Explorer endpoint (Ingestion endpoint for Queued Ingestion, Query endpoint for Streaming Ingestion)
         /// </summary>
-        public string IngestionEndpointUri { get; set; }
+        public string ConnectionString { get; set; }
 
         /// <summary>
         /// The name of the database to which data should be ingested to
@@ -123,88 +123,26 @@ namespace Serilog.Sinks.AzureDataExplorer
         public AuthenticationMode AuthenticationMode { get; private set; }
 
         /// <summary>
-        /// user token
-        /// </summary>
-        public string UserToken { get; private set; }
-
-        /// <summary>
-        /// application token
-        /// </summary>
-        public string ApplicationToken { get; private set; }
-
-        /// <summary>
         /// application clientId
         /// </summary>
         public string ApplicationClientId { get; private set; }
 
-        /// <summary>
-        /// ApplicationCertificateThumbprint
-        /// </summary>
-        public string ApplicationCertificateThumbprint { get; private set; }
-
-        /// <summary>
-        /// ApplicationCertificateSubjectDistinguishedName
-        /// </summary>
-        public string ApplicationCertificateSubjectDistinguishedName { get; private set; }
-
-        /// <summary>
-        /// ApplicationKey
-        /// </summary>
-        public string ApplicationKey { get; private set; }
-
-        /// <summary>
-        /// ApplicationCertificate
-        /// </summary>
-        public X509Certificate2 ApplicationCertificate { get; private set; }
-
-        /// <summary>
-        /// Authority
-        /// </summary>
-        public string Authority { get; private set; }
-
-        /// <summary>
-        /// SendX5C
-        /// </summary>
-        public bool SendX5C { get; private set; }
-
-        /// <summary>
-        /// AzureRegion
-        /// </summary>
-        public string AzureRegion { get; private set; }
-
-        /// <summary>
-        /// TokenCredential
-        /// </summary>
-        public Azure.Core.TokenCredential TokenCredential { get; private set; }
-
         public AzureDataExplorerSinkOptions()
         {
-            this.Period = TimeSpan.FromSeconds(10);
-            this.BatchPostingLimit = 1000;
-            this.QueueSizeLimit = 100000;
-            this.BufferFileRollingInterval = RollingInterval.Hour;
-            this.BufferFileCountLimit = 20;
-            this.BufferFileSizeLimitBytes = 10L * 1024 * 1024;
-            this.BufferFileOutputFormat =
+            Period = TimeSpan.FromSeconds(10);
+            BatchPostingLimit = 1000;
+            QueueSizeLimit = 100000;
+            BufferFileRollingInterval = RollingInterval.Hour;
+            BufferFileCountLimit = 20;
+            BufferFileSizeLimitBytes = 10L * 1024 * 1024;
+            BufferFileOutputFormat =
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
-            this.FlushImmediately = false;
+            FlushImmediately = false;
+            // The default uses this, so that other modes are not attempted
+            AuthenticationMode = AuthenticationMode.KustoConnectionString;
         }
 
         #region Authentication builder methods
-
-        public AzureDataExplorerSinkOptions WithAadApplicationCertificate(string applicationClientId, X509Certificate2 applicationCertificate, string authority,
-            bool sendX5C = false, string azureRegion = null)
-        {
-            AuthenticationMode = AuthenticationMode.AadApplicationCertificate;
-            ApplicationClientId = applicationClientId;
-            ApplicationCertificate = applicationCertificate;
-            Authority = authority;
-            SendX5C = sendX5C;
-            AzureRegion = azureRegion;
-
-            return this;
-        }
-
         public AzureDataExplorerSinkOptions WithAadSystemAssignedManagedIdentity()
         {
             AuthenticationMode = AuthenticationMode.AadSystemManagedIdentity;
@@ -217,77 +155,13 @@ namespace Serilog.Sinks.AzureDataExplorer
             ApplicationClientId = applicationClientId;
             return this;
         }
-
-        public AzureDataExplorerSinkOptions WithAadApplicationKey(string applicationClientId, string applicationKey, string authority)
-        {
-            AuthenticationMode = AuthenticationMode.AadApplicationKey;
-            ApplicationClientId = applicationClientId;
-            ApplicationKey = applicationKey;
-            Authority = authority;
-
-            return this;
-        }
-
-        public AzureDataExplorerSinkOptions WithAadApplicationSubjectName(string applicationClientId, string applicationCertificateSubjectDistinguishedName,
-            string authority, string azureRegion = null)
-        {
-            AuthenticationMode = AuthenticationMode.AadApplicationSubjectName;
-            ApplicationClientId = applicationClientId;
-            ApplicationCertificateSubjectDistinguishedName = applicationCertificateSubjectDistinguishedName;
-            Authority = authority;
-            AzureRegion = azureRegion;
-
-            return this;
-        }
-
-        public AzureDataExplorerSinkOptions WithAadApplicationThumbprint(string applicationClientId, string applicationCertificateThumbprint, string authority)
-        {
-            AuthenticationMode = AuthenticationMode.AadApplicationThumbprint;
-            ApplicationClientId = applicationClientId;
-            ApplicationCertificateThumbprint = applicationCertificateThumbprint;
-            Authority = authority;
-
-            return this;
-        }
-
-        public AzureDataExplorerSinkOptions WithAadApplicationToken(string applicationToken)
-        {
-            AuthenticationMode = AuthenticationMode.AadApplicationToken;
-            ApplicationToken = applicationToken;
-
-            return this;
-        }
-
-        public AzureDataExplorerSinkOptions WithAadApplicationToken(Azure.Core.TokenCredential tokenCredential)
-        {
-            AuthenticationMode = AuthenticationMode.AadAzureTokenCredentials;
-            TokenCredential = tokenCredential;
-
-            return this;
-        }
-
-        public AzureDataExplorerSinkOptions WithAadUserToken(string userToken)
-        {
-            AuthenticationMode = AuthenticationMode.AadUserToken;
-            UserToken = userToken;
-
-            return this;
-        }
-
         #endregion
     }
 
     public enum AuthenticationMode
     {
-        AadUserPrompt,
-        AadUserToken,
-        AadApplicationCertificate,
-        AadApplicationKey,
-        AadApplicationSubjectName,
-        AadApplicationThumbprint,
-        AadApplicationToken,
-        AadAzureTokenCredentials,
         AadUserManagedIdentity,
-        AadSystemManagedIdentity
+        AadSystemManagedIdentity,
+        KustoConnectionString
     }
 }

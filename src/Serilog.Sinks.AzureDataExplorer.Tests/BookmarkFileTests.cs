@@ -51,8 +51,8 @@ namespace Serilog.Sinks.AzureDataExplorer
                 bookmarkFile.WriteBookmark(fileSetPosition);
 
                 // Assert
-                Stream stream = System.IO.File.Open(tempFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
-                StreamReader streamReader = new StreamReader(stream); 
+                Stream stream = System.IO.File.Open(tempFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                StreamReader streamReader = new StreamReader(stream);
                 string str = await streamReader.ReadToEndAsync();
                 Assert.Equal("456:::file2.txt", Regex.Replace(str, @"\t|\n|\r", ""));
             }

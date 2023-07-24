@@ -13,7 +13,7 @@ namespace Serilog.Sinks.AzureDataExplorer
                 .WriteTo.Console()
                 .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                 {
-                    IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
+                    ConnectionString = Environment.GetEnvironmentVariable("connectionString"),
                     DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
                     TableName = Environment.GetEnvironmentVariable("tableName"),
                     FlushImmediately = Environment.GetEnvironmentVariable("flushImmediately").IsNotNullOrEmpty() && bool.Parse(Environment.GetEnvironmentVariable("flushImmediately")!),
@@ -31,7 +31,7 @@ namespace Serilog.Sinks.AzureDataExplorer
                         new SinkColumnMapping { ColumnName ="Position", ColumnType ="dynamic", ValuePath = "$.Properties.Position" } ,
                         new SinkColumnMapping { ColumnName ="Elapsed", ColumnType ="int", ValuePath = "$.Properties.Elapsed" } ,
                     }
-                }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"), Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant"))).CreateLogger();
+                }).CreateLogger();
 
             var position = new { Latitude = 25, Longitude = 134 };
             var elapsedMs = 34;
@@ -41,25 +41,25 @@ namespace Serilog.Sinks.AzureDataExplorer
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             log.Verbose("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             log.Verbose("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             log.Verbose("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             Thread.Sleep(10000);
         }
     }
