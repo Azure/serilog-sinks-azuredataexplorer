@@ -1,7 +1,5 @@
 # Serilog.Sinks.AzureDataExplorer
 
-[![.NET](https://github.com/saguiitay/serilog-sinks-azuredataexplorer/actions/workflows/dotnet.yml/badge.svg?branch=main)](https://github.com/saguiitay/serilog-sinks-azuredataexplorer/actions/workflows/dotnet.yml) [![Nuget](https://github.com/saguiitay/serilog-sinks-azuredataexplorer/actions/workflows/nuget.yml/badge.svg)](https://github.com/saguiitay/serilog-sinks-azuredataexplorer/actions/workflows/nuget.yml)
-
 A Serilog sink that writes events to an [Azure Data Explorer (Kusto)](https://docs.microsoft.com/en-us/azure/data-explorer) cluster.
 
 **Package** - [Serilog.Sinks.AzureDataExplorer](http://nuget.org/packages/serilog.sinks.azuredataexplorer)
@@ -17,6 +15,8 @@ Install-Package Serilog.Sinks.AzureDataExplorer
 
 ## How to use
 
+There are breaking changes between versions 1.0.x and 2.0.0. While there are no change in functionality, the newer version simplifies the configuration options providing connection and authentication options declaratively.
+
 This sink supports the durable mode where the logs are written to a file first and then flushed to the specified ADX table. This durable mode prevents data loss when the ADX connection couldnt be established. Durable mode can be turned on when we specify the bufferFileName in the LoggerConfiguration as mentioned below.
 
 Configuration when durable mode is not required
@@ -25,7 +25,7 @@ Configuration when durable mode is not required
 var log = new LoggerConfiguration()
     .WriteTo.AzureDataExplorer(new AzureDataExplorerSinkOptions
     {
-        IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
+        ConnectionString = "Data Source=http://kusto-cluster.region.kusto.windows.net;Database=NetDefaultDB;Fed=True;AppClientId={appId};AppKey={appKey};Authority Id={authority}",
         DatabaseName = "MyDatabase",
         TableName = "Serilogs"
     })
@@ -38,7 +38,7 @@ Configuration when durable mode is required
 var log = new LoggerConfiguration()
     .WriteTo.AzureDataExplorer(new AzureDataExplorerSinkOptions
     {
-        IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
+        ConnectionString = "Data Source=http://kusto-cluster.region.kusto.windows.net;Database=NetDefaultDB;Fed=True;AppClientId={appId};AppKey={appKey};Authority Id={authority}",
         DatabaseName = "MyDatabase",
         TableName = "Serilogs"
         BufferBaseFileName = "BufferBaseFileName"
@@ -56,6 +56,7 @@ var log = new LoggerConfiguration()
   [Azure Synapse Data Explorer](https://docs.microsoft.com/en-us/azure/synapse-analytics/data-explorer/data-explorer-overview) and
   [Azure Data Explorer Free-Tier](https://docs.microsoft.com/en-us/azure/data-explorer/start-for-free)
   [Real time analytics in Fabric](https://learn.microsoft.com/en-us/fabric/real-time-analytics/overview)
+* With interactive login, application developers can use [Kusto Free](https://dataexplorer.azure.com/freecluster) to debug and log data from their applications without having to provision a cluster.
 
 ## Options
 
@@ -68,6 +69,8 @@ var log = new LoggerConfiguration()
 ### Target ADX Cluster
 
 * IngestionEndpointUri: Azure Data Explorer endpoint (Ingestion endpoint for Queued Ingestion, Query endpoint for Streaming Ingestion)
+    - This option is relevant only for package versions **1.0.x** series of the connector
+* ConnectionString: The [Kusto connection string](https://learn.microsoft.com/en-us/azure/data-explorer/kusto/api/connection-strings/kusto) to connect to Kusto. This option is relevant only for package versions **2.0.x** series of the connector
 * DatabaseName: The name of the database to which data should be ingested to
 * TableName: The name of the table to which data should be ingested to
 * FlushImmediately : In case queued ingestion is selected, this property determines if is needed to flush the data immediately to ADX cluster. Not recommended to enable for data with higher workloads. The default is false.
@@ -109,7 +112,13 @@ Durable mode can be turned on when we specify the bufferFileName in the LoggerCo
 
 ### Authentication
 
+__**Version 1.0.x**__
+
 The sink supports authentication using various methods. These are configured through the [connection string](https://github.com/MicrosoftDocs/dataexplorer-docs/blob/main/data-explorer/kusto/api/connection-strings/kusto.md) options provided.
+
+This version imperatively declares the options that are needed for Authentication using the __**With**__ methods. The following provide examples of these options : 
+
+```csharp
 
 The following provide examples of these options : 
 
@@ -131,4 +140,50 @@ new AzureDataExplorerSinkOptions(
     ConnectionString=$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;",
     ManagedIdentity="362b9e3c-b4d4-43aa-9be9-bbf306fb7481"
 )   
+```
+
+__**Version 2.0.x**__
+
+The sink supports authentication using [Kusto connection string](https://learn.microsoft.com/en-us/azure/data-explorer/kusto/api/connection-strings/kusto) making it easier to declarively configure the authentication options.
+
+For example to use the AppId/AppKey based authentication the user can provide the following connection string
+
+```csharp
+$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;AppClientId={appId};AppKey={appKey};Authority Id={authority}"
+```
+To use Azure AD Federated authentication using user / application token the user can provide the following connection string
+
+```csharp
+$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;ApplicationToken={appAccessToken}"
+```
+
+Using X.509 certificate by thumbprint (client will attempt to load the certificate from local store)
+
+```csharp
+$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;AppClientId={appId};AppCert={appCert};Authority Id={authority}"
+```
+
+To use ManagedIdentity, the ManagedIdentity option can be provided that is then used to authenticate the user. Note that the example uses values sourced from environment variables, but can be provided directly as well.
+
+If ManagedIdentity is provided as "system" then the system assigned managed identity is used. If ManagedIdentity is provided as a GUID then the user assigned managed identity is used.
+
+```csharp
+var log = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
+                {
+                    ConnectionString = Environment.GetEnvironmentVariable("connectionString"),
+                    DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
+                    TableName = Environment.GetEnvironmentVariable("tableName"),
+                    FlushImmediately = Environment.GetEnvironmentVariable("flushImmediately").IsNotNullOrEmpty() && bool.Parse(Environment.GetEnvironmentVariable("flushImmediately")!),
+                    ManagedIdentity = Environment.GetEnvironmentVariable("managedIdentity")
+                })
+
+```
+
+To use interactive authentication, the user can provide the following connection string. This is useful for developers to use Kusto Free to debug and log data from their applications without having to provision a cluster.
+
+```csharp
+$"Data Source={kustoUri};Database=NetDefaultDB;Fed=True;"
 ```

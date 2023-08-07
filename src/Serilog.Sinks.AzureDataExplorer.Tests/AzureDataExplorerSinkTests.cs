@@ -83,7 +83,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         }
 
         [Fact]
-        public void AzureDataExplorerSink_Throws_ArgumentNullException_For_Null_IngestionEndpointUri_DurableMode()
+        public void AzureDataExplorerSink_Throws_ArgumentNullException_For_Null_ConnectionString_DurableMode()
         {
             var options = new AzureDataExplorerSinkOptions
             {
