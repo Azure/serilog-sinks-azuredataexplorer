@@ -8,29 +8,20 @@ namespace Serilog.Sinks.AzureDataExplorer;
 
 /*
  * This is an End to End Testcase which requires the following input to be set as environment variables
- * ingestionURI : ingestion URL of ADX
+ * connectionString : ingestion URL of ADX
  * databaseName : database name 
- * appId : Application client Id
- * appKey : Application client key
- * tenant : Authority
  *- The above mentioned parameters needs to be set as environment variables in the respective environments. 
  
  * For Windows, in powershell set the following parameters
 
- * $env:ingestionURI="<ingestionURI>"
+ * $env:connectionString="<connectionString>"
  * $env:databaseName="<databaseName>"
  * $env:tableName="<tableName>"
- * $env:appId="<appId>"
- * $env:appKey="<appKey>"
- * $env:tenant="<tenant"
 
  * For Linux based environments, in terminal set the following parameters
- * export ingestionURI="<ingestionURI>"
+ * export connectionString="<connectionString>"
  * export databaseName="<databaseName>"
  * export tableName="<tableName>"
- * export appId="<appId>"
- * export appKey="<appKey>"
- * export tenant="<tenant"
  */
 
 public class AzureDataExplorerSinkE2ETests : IDisposable
@@ -42,20 +33,13 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
     public AzureDataExplorerSinkE2ETests()
     {
-        Assert.NotNull(Environment.GetEnvironmentVariable("ingestionURI"));
+        Assert.NotNull(Environment.GetEnvironmentVariable("connectionString"));
         Assert.NotNull(Environment.GetEnvironmentVariable("databaseName"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("appId"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("appKey"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
         m_bufferBaseFileName = "";
         var randomInt = new Random().Next();
         m_generatedTableName = "Serilog_" + randomInt;
-        m_kustoConnectionStringBuilder = new KustoConnectionStringBuilder(
-                AzureDataExplorerSinkOptionsExtensions.GetClusterUrl(
-                    Environment.GetEnvironmentVariable("ingestionURI")),
-                Environment.GetEnvironmentVariable("databaseName"))
-            .WithAadApplicationKeyAuthentication(Environment.GetEnvironmentVariable("appId"),
-                Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant"));
+        m_kustoConnectionStringBuilder = new KustoConnectionStringBuilder(Environment.GetEnvironmentVariable("connectionString"),
+                Environment.GetEnvironmentVariable("databaseName"));
         using (var kustoClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
         {
             var command = CslCommandGenerator.GenerateTableCreateCommand(m_generatedTableName,
@@ -123,7 +107,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         var randomInt = new Random().Next();
         if (String.Equals(runMode, "durable"))
         {
-            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt +Path.DirectorySeparatorChar+  "logger-buffer";
+            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt + Path.DirectorySeparatorChar + "logger-buffer";
             if (!Directory.Exists(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt))
             {
                 Directory.CreateDirectory(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt);
@@ -133,7 +117,8 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
         var position = new
         {
-            Latitude = 25, Longitude = 134
+            Latitude = 25,
+            Longitude = 134
         };
         var elapsedMs = 34;
 
@@ -164,7 +149,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 while (true)
                 {
                     index = str.IndexOf(Environment.NewLine, index, StringComparison.Ordinal);
-                    if(index < 0) break;
+                    if (index < 0) break;
                     lineCount++;
                     index++;
                 }
@@ -186,7 +171,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                     .MinimumLevel.Verbose()
                     .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                     {
-                        IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
+                        ConnectionString = Environment.GetEnvironmentVariable("connectionString"),
                         DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
                         BatchPostingLimit = 10,
                         Period = TimeSpan.FromSeconds(5),
@@ -195,8 +180,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         BufferFileRollingInterval = RollingInterval.Minute,
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    })
                     .CreateLogger();
                 break;
             case "Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable":
@@ -204,7 +188,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                     .MinimumLevel.Verbose()
                     .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                     {
-                        IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
+                        ConnectionString = Environment.GetEnvironmentVariable("connectionString"),
                         BatchPostingLimit = 10,
                         Period = TimeSpan.FromMilliseconds(1000),
                         DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
@@ -214,8 +198,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         BufferFileLoggingLevelSwitch = new LoggingLevelSwitch(Events.LogEventLevel.Error),
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    })
                     .CreateLogger();
                 break;
             case "Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_NonDurable":
@@ -223,15 +206,14 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                     .MinimumLevel.Verbose()
                     .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                     {
-                        IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
+                        ConnectionString = Environment.GetEnvironmentVariable("connectionString"),
                         DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
                         BatchPostingLimit = 10,
                         Period = TimeSpan.FromMilliseconds(1000),
                         TableName = m_generatedTableName,
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    })
                     .CreateLogger();
                 break;
             case "Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable":
@@ -239,7 +221,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                     .MinimumLevel.Verbose()
                     .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                     {
-                        IngestionEndpointUri = Environment.GetEnvironmentVariable("ingestionURI"),
+                        ConnectionString = Environment.GetEnvironmentVariable("connectionString"),
                         DatabaseName = Environment.GetEnvironmentVariable("databaseName"),
                         BatchPostingLimit = 10,
                         Period = TimeSpan.FromMilliseconds(1000),
@@ -247,8 +229,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         UseStreamingIngestion = true,
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    })
                     .CreateLogger();
                 break;
             default:
@@ -277,21 +258,18 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 noOfRecordsIngested = (int)reader.GetInt64(0);
             }
         }
-
         return noOfRecordsIngested;
     }
 
     public void Dispose()
     {
-        using (var queryProvider = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
+        using var queryProvider = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder);
+        var command = CslCommandGenerator.GenerateTableDropCommand(m_generatedTableName);
+        var clientRequestProperties = new ClientRequestProperties()
         {
-            var command = CslCommandGenerator.GenerateTableDropCommand(m_generatedTableName);
-            var clientRequestProperties = new ClientRequestProperties()
-            {
-                ClientRequestId = Guid.NewGuid().ToString()
-            };
-            queryProvider.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command,
-                clientRequestProperties);
-        }
+            ClientRequestId = Guid.NewGuid().ToString()
+        };
+        queryProvider.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command,
+            clientRequestProperties);
     }
 }

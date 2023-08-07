@@ -89,7 +89,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             if (options == null) throw new ArgumentNullException(nameof(options));
             m_databaseName = options.DatabaseName ?? throw new ArgumentNullException(nameof(options.DatabaseName));
             m_tableName = options.TableName ?? throw new ArgumentNullException(nameof(options.TableName));
-            if (options.IngestionEndpointUri == null) throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
+            if (options.ConnectionString == null) throw new ArgumentNullException(nameof(options.ConnectionString));
             m_formatProvider = options.FormatProvider;
             var mappingName = options.MappingName;
             m_flushImmediately = options.FlushImmediately;
@@ -119,8 +119,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                 m_ingestionMapping.IngestionMappings = SDefaultIngestionColumnMapping;
             }
 
-            var kcsb = options.GetKustoConnectionStringBuilder();
-            var engineKcsb = options.GetKustoEngineConnectionStringBuilder();
+            var kcsb = options.GetIngestKcsb();
+            var engineKcsb = options.GetEngineKcsb();
 
             if (options.UseStreamingIngestion)
             {
@@ -134,39 +134,44 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
-            using (var dataStream = CreateStreamFromLogEvents(batch))
+            using var dataStream = CreateStreamFromLogEvents(batch);
+            var sourceId = Guid.NewGuid();
+            if (!m_streamingIngestion)
             {
-                var sourceId = Guid.NewGuid();
-                if (!m_streamingIngestion)
-                {
-                    await m_ingestClient.IngestFromStreamAsync(
-                        dataStream,
-                        new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
-                        {
-                            DatabaseName = m_databaseName,
-                            TableName = m_tableName,
-                            FlushImmediately = m_flushImmediately,
-                            Format = DataSourceFormat.multijson,
-                            IngestionMapping = m_ingestionMapping
-                        },
-                        new StreamSourceOptions
-                        {
-                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
-                        }).ConfigureAwait(false);
-                }
-                else
-                {
-                    await m_ingestClient.IngestFromStreamAsync(
-                        dataStream,
-                        new KustoIngestionProperties()
-                        {
-                            DatabaseName = m_databaseName, TableName = m_tableName, Format = DataSourceFormat.multijson, IngestionMapping = m_ingestionMapping
-                        },
-                        new StreamSourceOptions
-                        {
-                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
-                        }).ConfigureAwait(false);
-                }
+                await m_ingestClient.IngestFromStreamAsync(
+                    dataStream,
+                    new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
+                    {
+                        DatabaseName = m_databaseName,
+                        TableName = m_tableName,
+                        FlushImmediately = m_flushImmediately,
+                        Format = DataSourceFormat.multijson,
+                        IngestionMapping = m_ingestionMapping
+                    },
+                    new StreamSourceOptions
+                    {
+                        SourceId = sourceId,
+                        LeaveOpen = false,
+                        CompressionType = DataSourceCompressionType.GZip
+                    }).ConfigureAwait(false);
+            }
+            else
+            {
+                await m_ingestClient.IngestFromStreamAsync(
+                    dataStream,
+                    new KustoIngestionProperties()
+                    {
+                        DatabaseName = m_databaseName,
+                        TableName = m_tableName,
+                        Format = DataSourceFormat.multijson,
+                        IngestionMapping = m_ingestionMapping
+                    },
+                    new StreamSourceOptions
+                    {
+                        SourceId = sourceId,
+                        LeaveOpen = false,
+                        CompressionType = DataSourceCompressionType.GZip
+                    }).ConfigureAwait(false);
             }
         }
 
@@ -179,12 +184,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
         {
             var stream = SRecyclableMemoryStreamManager.GetStream();
             {
-                using (GZipStream compressionStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true))
+                using GZipStream compressionStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true);
+                foreach (var logEvent in batch)
                 {
-                    foreach (var logEvent in batch)
-                    {
-                        System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider));
-                    }
+                    System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider));
                 }
             }
 

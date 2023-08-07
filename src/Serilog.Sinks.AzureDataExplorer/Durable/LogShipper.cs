@@ -200,7 +200,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                     },
                                     new StreamSourceOptions
                                     {
-                                        LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip, SourceId = fileIdentifier
+                                        LeaveOpen = false,
+                                        CompressionType = DataSourceCompressionType.GZip,
+                                        SourceId = fileIdentifier
                                     }).ConfigureAwait(false);
                             }
                             var ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);

@@ -83,7 +83,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             if (options == null) throw new ArgumentNullException(nameof(options));
             var databaseName = options.DatabaseName ?? throw new ArgumentNullException(nameof(options.DatabaseName));
             var tableName = options.TableName ?? throw new ArgumentNullException(nameof(options.TableName));
-            if (options.IngestionEndpointUri == null) throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
+            if (options.ConnectionString == null) throw new ArgumentNullException(nameof(options.ConnectionString));
             if (string.IsNullOrWhiteSpace(options.BufferBaseFileName))
                 throw new ArgumentException("Cannot create the durable ADX sink without a buffer base file name!");
 
@@ -114,7 +114,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                 ingestionMapping.IngestionMappings = SDefaultIngestionColumnMapping;
             }
 
-            var kcsb = options.GetKustoConnectionStringBuilder();
+            var kcsb = options.GetIngestKcsb();
             m_kustoQueuedIngestClient = KustoIngestFactory.CreateQueuedIngestClient(kcsb);
             m_sink = new LoggerConfiguration()
                 .MinimumLevel.Verbose()

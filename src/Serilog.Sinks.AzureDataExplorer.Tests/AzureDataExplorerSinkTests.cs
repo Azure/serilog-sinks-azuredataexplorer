@@ -12,14 +12,14 @@ namespace Serilog.Sinks.AzureDataExplorer
         {
             Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerDurableSink(null));
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_throw_exception_if_options_is_null_nonDurableMode()
-                {
-                    // Arrange, Act, Assert
-                    var ex = Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerSink(null));
-                    Assert.Equal("options", ex.ParamName);
-                }
+        {
+            // Arrange, Act, Assert
+            var ex = Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerSink(null));
+            Assert.Equal("options", ex.ParamName);
+        }
 
         [Fact]
         public void Test_AzureDataExplorerSink_Throws_ArgumentNullException_For_Null_DatabaseName_DurableMode()
@@ -28,21 +28,23 @@ namespace Serilog.Sinks.AzureDataExplorer
             {
                 DatabaseName = null,
                 TableName = "test",
-                IngestionEndpointUri = "https://test.com",
+                ConnectionString = "https://test.com",
                 BufferBaseFileName = "test",
                 FlushImmediately = true
             };
 
             Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerDurableSink(options));
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_throw_exception_if_database_name_is_null_NonDurableMode()
         {
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = null, TableName = "table", IngestionEndpointUri = "http://localhost",
+                DatabaseName = null,
+                TableName = "table",
+                ConnectionString = $"Data Source=http://localhost;Database=NetDefaultDB;Fed=True",
             };
 
             // Act, Assert
@@ -57,20 +59,22 @@ namespace Serilog.Sinks.AzureDataExplorer
             {
                 DatabaseName = "test",
                 TableName = null,
-                IngestionEndpointUri = "https://test.com",
+                ConnectionString = "https://test.com",
                 BufferBaseFileName = "test",
                 FlushImmediately = true
             };
             Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerDurableSink(options));
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_throw_exception_if_table_name_is_null_non_durable_mode()
         {
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db", TableName = null, IngestionEndpointUri = "http://localhost",
+                DatabaseName = "db",
+                TableName = null,
+                ConnectionString = $"Data Source=http://localhost;Database=NetDefaultDB;Fed=True",
             };
 
             // Act, Assert
@@ -79,41 +83,45 @@ namespace Serilog.Sinks.AzureDataExplorer
         }
 
         [Fact]
-        public void AzureDataExplorerSink_Throws_ArgumentNullException_For_Null_IngestionEndpointUri_DurableMode()
+        public void AzureDataExplorerSink_Throws_ArgumentNullException_For_Null_ConnectionString_DurableMode()
         {
             var options = new AzureDataExplorerSinkOptions
             {
                 DatabaseName = "test",
                 TableName = "test",
-                IngestionEndpointUri = null,
+                ConnectionString = null,
                 BufferBaseFileName = "test",
                 FlushImmediately = true
             };
 
             Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerDurableSink(options));
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_throw_exception_if_ingestion_endpoint_uri_is_null_non_durable_mode()
         {
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db", TableName = "table", IngestionEndpointUri = null,
+                DatabaseName = "db",
+                TableName = "table",
+                ConnectionString = null,
             };
 
             // Act, Assert
             var ex = Assert.Throws<ArgumentNullException>(() => new AzureDataExplorerSink(options));
-            Assert.Equal("IngestionEndpointUri", ex.ParamName);
+            Assert.Equal("ConnectionString", ex.ParamName);
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_set_columns_mapping_when_mapping_name_and_columns_mapping_is_not_set_nonDurableMode()
         {
             // Arrange
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db", TableName = "table", IngestionEndpointUri = "http://localhost",
+                DatabaseName = "db",
+                TableName = "table",
+                ConnectionString = $"Data Source=http://localhost;Database=NetDefaultDB;Fed=True",
             };
 
             // Act
@@ -125,7 +133,7 @@ namespace Serilog.Sinks.AzureDataExplorer
                 .GetField("m_ingestionMapping", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(fieldInfoIngestionMapping);
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_use_streaming_ingestion_when_flag_is_set_nonDurableMode()
         {
@@ -134,7 +142,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             {
                 DatabaseName = "db",
                 TableName = "table",
-                IngestionEndpointUri = "http://localhost",
+                ConnectionString = $"Data Source=http://localhost;Database=db;Fed=True",
                 MappingName = "mymapping",
                 UseStreamingIngestion = true
             };
@@ -149,7 +157,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             Assert.NotNull(ingestClientFieldName.GetValue(sink));
             Assert.IsAssignableFrom<IKustoIngestClient>(ingestClientFieldName.GetValue(sink));
         }
-        
+
         [Fact]
         public void Test_AzureDataExplorerSink_constructor_should_use_batch_ingestion_when_flag_is_set_NonDurableMode()
         {
@@ -158,7 +166,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             {
                 DatabaseName = "db",
                 TableName = "table",
-                IngestionEndpointUri = "http://localhost",
+                ConnectionString = $"Data Source=http://localhost;Database=NetDefaultDB;Fed=True",
                 MappingName = "mymapping",
                 UseStreamingIngestion = false
             };
@@ -173,13 +181,16 @@ namespace Serilog.Sinks.AzureDataExplorer
             Assert.NotNull(ingestClientFieldName.GetValue(sink));
             Assert.IsAssignableFrom<IKustoQueuedIngestClient>(ingestClientFieldName.GetValue(sink));
         }
-        
+
         [Fact]
         public void TestEmitBatchAsync()
         {
             var options = new AzureDataExplorerSinkOptions
             {
-                DatabaseName = "db", TableName = "table", IngestionEndpointUri = "http://localhost", UseStreamingIngestion = true,
+                DatabaseName = "db",
+                TableName = "table",
+                ConnectionString = $"Data Source=http://localhost;Database=NetDefaultDB;Fed=True",
+                UseStreamingIngestion = true,
             };
             var sink = new AzureDataExplorerSink(options);
 
@@ -215,7 +226,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             {
                 DatabaseName = "test",
                 TableName = "test",
-                IngestionEndpointUri = "https://test.com",
+                ConnectionString = "https://test.com",
                 BufferBaseFileName = "",
                 FlushImmediately = true
             };

@@ -13,7 +13,7 @@ public class AzureDataExplorerSinkExtensionsTests
         {
             DatabaseName = "mockDB",
             TableName = "mockTable",
-            IngestionEndpointUri = "http://ingestionUri",
+            ConnectionString = "http://ingestionUri",
             BatchPostingLimit = 10,
             Period = TimeSpan.FromSeconds(10),
             QueueSizeLimit = 100

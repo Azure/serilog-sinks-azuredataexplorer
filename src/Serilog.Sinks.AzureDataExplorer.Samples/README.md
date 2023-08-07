@@ -13,13 +13,14 @@ var log = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
                 .WriteTo.AzureDataExplorerSink(new AzureDataExplorerSinkOptions
                 {
-                    IngestionEndpointUri = "<ADXIngestionURL>",
+                    //Refer: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/api/connection-strings/kusto
+                    ConnectionString = "<ADXIngestionURL>",
                     DatabaseName = "<databaseName>",
                     TableName = "<tableName>",
                     BufferBaseFileName = "<bufferFileName>",
                     ColumnsMapping = "<mappingName>" ,
                     }
-                }.WithAadApplicationKey("<appId>", "<appKey>", "<tenant>"))
+                })
                 .CreateLogger();
 ```
 Replace the placeholders with the appropriate values for your Azure Data Explorer cluster. You can find these values in the Azure portal.
@@ -38,12 +39,10 @@ Serilog-ADX connector provides a demo/sample application that can be used to qui
 ```
 - Clone the Serilog-ADX connector git repo
 - The following are the set of parameters which needs to be set as environment variables
-  - IngestionEndPointUri : Ingest URL of ADX cluster created.
+  - ConnectionString : The connection string of the ADX cluster.
   - DatabaseName : The name of the database to which data should be ingested into.
   - TableName : The name of the table created (in our case Serilog)
-  - AppId : Application Client ID required for authentication.
-  - AppKey : Application key required for authentication.
-  - Tenant : Tenant Id
+  - ManagedIdentity : The managed identity to use. Use "system" in case of System managed identity and use Managed client id in case of UserManagedIdentity
   - BufferBaseFileName : If we require durability of our logs(ie we don't want to lose our logs incase of any connection failure to ADX cluster), Ex: C:/Users/logs/Serilog
 - The above mentioned parameters needs to be set as environment variables in the respective environments. 
  
@@ -53,18 +52,12 @@ For Windows, in powershell set the following parameters
 $env:ingestionURI="<ingestionURI>"
 $env:databaseName="<databaseName>"
 $env:tableName="<tableName>"
-$env:appId="<appId>"
-$env:appKey="<appKey>"
-$env:tenant="<tenant"
 ```
  For Linux based environments, in terminal set the following parameters
 ```shell
 export ingestionURI="<ingestionURI>"
 export databaseName="<databaseName>"
 export tableName="<tableName>"
-export appId="<appId>"
-export appKey="<appKey>"
-export tenant="<tenant"
 ```
 - Open a Powershell window, navigate to Serilog-ADX connector base folder and run the following command
 ```shell

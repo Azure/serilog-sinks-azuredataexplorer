@@ -23,6 +23,7 @@ jobs:
       run: dotnet build src --no-restore
     - name: Test
       env:
+        connectionString : ${{secrets.CONNECTION_STRING}}
         ingestionURI : ${{secrets.INGESTION_URI}}
         databaseName : ${{secrets.DATABASE_NAME}}
         appId : ${{secrets.APP_ID}}
