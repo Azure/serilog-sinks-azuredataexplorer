@@ -40,10 +40,16 @@ var log = new LoggerConfiguration()
     {
         IngestionEndpointUri = "https://ingest-mycluster.northeurope.kusto.windows.net",
         DatabaseName = "MyDatabase",
-        TableName = "Serilogs"
-        BufferBaseFileName = "BufferBaseFileName"
+        TableName = "Serilogs",
+        BufferBaseFileName = "BufferBaseFileName",
+        BufferFileRollingInterval = RollingInterval.Minute
     })
     .CreateLogger();
+```
+Note: Inorder to get the exception as string mapped to kusto column such as Exception, it is recommended to use ExceptionEx Attribute.
+For example:
+```csharp
+new SinkColumnMapping { ColumnName ="Exception", ColumnType ="string", ValuePath = "$.ExceptionEx" }
 ```
 
 ## Features
