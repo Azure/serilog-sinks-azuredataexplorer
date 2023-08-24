@@ -46,6 +46,12 @@ var log = new LoggerConfiguration()
     .CreateLogger();
 ```
 
+Note: Inorder to get the exception as string mapped to kusto column such as Exception, it is recommended to use ExceptionString Attribute.
+For example:
+```csharp
+new SinkColumnMapping { ColumnName ="Exception", ColumnType ="string", ValuePath = "$.ExceptionString" }
+```
+
 ## Features
 
 * Supports both Queued and Streaming ingestion

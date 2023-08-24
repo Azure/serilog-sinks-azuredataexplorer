@@ -46,7 +46,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             LogEvent logEvent,
             IFormatProvider formatProvider = null)
         {
-            var eventObject = new Dictionary<string, object>(5);
+            var eventObject = new Dictionary<string, object>(6);
 
             eventObject.Add("Timestamp", logEvent.Timestamp.ToUniversalTime().ToString("o"));
 
@@ -54,6 +54,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             eventObject.Add("Level", logEvent.Level.ToString());
             eventObject.Add("Message", logEvent.RenderMessage(formatProvider));
             eventObject.Add("Exception", logEvent.Exception);
+            eventObject.Add("ExceptionString", logEvent.Exception?.ToString() ?? "");
             eventObject.Add("Properties", logEvent.Properties.Dictionary());
 
             return eventObject;
