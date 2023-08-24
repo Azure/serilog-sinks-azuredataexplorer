@@ -27,6 +27,7 @@
       Added durability to the Azure Data Explorer Sink
       Added Sample project
       Added Tests
+      Added additional Exception object for durable mode
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
