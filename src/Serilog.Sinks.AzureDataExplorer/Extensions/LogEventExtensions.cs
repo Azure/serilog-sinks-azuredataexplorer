@@ -54,6 +54,22 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             eventObject.Add("Level", logEvent.Level.ToString());
             eventObject.Add("Message", logEvent.RenderMessage(formatProvider));
             eventObject.Add("Exception", logEvent.Exception);
+            if (logEvent.Exception != null)
+            {
+                var exceptionDetails = new
+                {
+                    ExceptionStr = logEvent.Exception.ToString(),
+                    Type = logEvent.Exception.GetType().FullName,
+                    Message = logEvent.Exception.Message,
+                    Source = logEvent.Exception.Source,
+                    TargetSite = logEvent.Exception.TargetSite?.Name,
+                    StackTrace = logEvent.Exception.StackTrace,
+                    HelpLink = logEvent.Exception.HelpLink,
+                    Data = logEvent.Exception.Data,
+                    InnerException = logEvent.Exception.InnerException?.ToString()
+                };
+                eventObject.Add("ExceptionEx", exceptionDetails);
+            }
             eventObject.Add("Properties", logEvent.Properties.Dictionary());
 
             return eventObject;
