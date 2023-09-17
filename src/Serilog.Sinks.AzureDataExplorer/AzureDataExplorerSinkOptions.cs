@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Serilog.Core;
 
 namespace Serilog.Sinks.AzureDataExplorer
@@ -9,6 +10,7 @@ namespace Serilog.Sinks.AzureDataExplorer
     public class AzureDataExplorerSinkOptions
     {
         private int m_queueSizeLimit;
+        private IReadOnlyDictionary<string, string> m_tableNameMappings;
 
         ///<summary>
         /// The maximum number of events to post in a single batch. Defaults to 1000.
@@ -49,6 +51,51 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// The name of the table to which data should be ingested to
         /// </summary>
         public string TableName { get; set; }
+
+        /// <summary>
+        /// The source and table name mappings
+        /// For the log from different source, it may contains diferent fields and we may have the requirement to ingest them into different tables
+        /// For eample: 
+        ///     - we may want to ingest ASP.NET related logs to a specific table
+        ///     - we may want to ingest performance related logs to a specific table
+        ///     - etc.
+        /// If the source matches an entry in the mapping table, logs will be directed to the mapping table, otherwise it will directed to the default table <see cref="TableName"/>
+        /// Due to performance limitation, source is defined at class level now, not namespace level, each source has to be listed explicitly in the mapping table
+        /// </summary>
+        public IReadOnlyDictionary<string, string> TableNameMappings
+        {
+            get { return this.m_tableNameMappings; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(TableNameMappings));
+                }
+
+                var copy = new Dictionary<string, string>(value.Count);
+                foreach (var entry in value)
+                {
+                    if (string.IsNullOrWhiteSpace(entry.Key))
+                    {
+                        throw new ArgumentException("A table name mapping key was null, empty, or consisted only of white-space characters.", nameof(this.TableNameMappings));
+                    }
+
+                    if (string.IsNullOrWhiteSpace(entry.Value))
+                    {
+                        throw new ArgumentException($"The table name mapping value provided for key '{entry.Key}' was null, empty, or consisted only of white-space characters.", nameof(this.TableNameMappings));
+                    }
+
+                    if (Encoding.UTF8.GetByteCount(entry.Value) != entry.Value.Length)
+                    {
+                        throw new ArgumentException($"The table name mapping value '{entry.Value}' provided for key '{entry.Key}' contained non-ASCII characters.", nameof(this.TableNameMappings));
+                    }
+
+                    copy[entry.Key] = entry.Value;
+                }
+
+                this.m_tableNameMappings = copy;
+            }
+        }
 
         /// <summary>
         /// The name of the (pre-created) data mapping to use for the ingested data
