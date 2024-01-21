@@ -123,7 +123,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         var randomInt = new Random().Next();
         if (String.Equals(runMode, "durable"))
         {
-            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt +Path.DirectorySeparatorChar+  "logger-buffer";
+            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt + Path.DirectorySeparatorChar + "logger-buffer";
             if (!Directory.Exists(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt))
             {
                 Directory.CreateDirectory(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt);
@@ -133,7 +133,8 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
         var position = new
         {
-            Latitude = 25, Longitude = 134
+            Latitude = 25,
+            Longitude = 134
         };
         var elapsedMs = 34;
 
@@ -164,7 +165,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 while (true)
                 {
                     index = str.IndexOf(Environment.NewLine, index, StringComparison.Ordinal);
-                    if(index < 0) break;
+                    if (index < 0) break;
                     lineCount++;
                     index++;
                 }

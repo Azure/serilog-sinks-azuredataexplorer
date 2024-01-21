@@ -11,7 +11,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadApplicationKey("applicationClientId", "applicationClientId", "authority");
 
         var kcsb = options.GetKustoConnectionStringBuilder();
@@ -25,7 +27,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadApplicationCertificate("applicationClientId", GetDummyCert(), "authority", false, "azureRegion");
 
         var kcsb = options.GetKustoConnectionStringBuilder();
@@ -39,7 +43,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadApplicationSubjectName("applicationClientId", "applicationCertificateSubjectName", "authority",
             "azureRegion");
 
@@ -54,7 +60,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadApplicationThumbprint("applicationClientId", "appCertThumbprint", "authority");
 
         var kcsb = options.GetKustoConnectionStringBuilder();
@@ -68,7 +76,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadApplicationToken("applicationToken");
 
         var kcsb = options.GetKustoConnectionStringBuilder();
@@ -82,7 +92,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadUserToken("userToken");
 
         var kcsb = options.GetKustoConnectionStringBuilder();
@@ -96,7 +108,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadSystemAssignedManagedIdentity();
 
         var kcsb = options.GetKustoConnectionStringBuilder();
@@ -110,7 +124,9 @@ public class AzureDataExplorerSinkOptionsExtensionsTests
     {
         var options = new AzureDataExplorerSinkOptions
         {
-            IngestionEndpointUri = "https://ingestion-endpoint-uri", DatabaseName = "database-name", TableName = "table-name"
+            IngestionEndpointUri = "https://ingestion-endpoint-uri",
+            DatabaseName = "database-name",
+            TableName = "table-name"
         }.WithAadUserAssignedManagedIdentity(Guid.NewGuid().ToString());
 
         var kcsb = options.GetKustoConnectionStringBuilder();

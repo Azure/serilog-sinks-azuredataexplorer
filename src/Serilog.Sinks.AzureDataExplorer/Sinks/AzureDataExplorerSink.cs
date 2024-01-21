@@ -151,7 +151,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                         },
                         new StreamSourceOptions
                         {
-                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
+                            SourceId = sourceId,
+                            LeaveOpen = false,
+                            CompressionType = DataSourceCompressionType.GZip
                         }).ConfigureAwait(false);
                 }
                 else
@@ -160,11 +162,16 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                         dataStream,
                         new KustoIngestionProperties()
                         {
-                            DatabaseName = m_databaseName, TableName = m_tableName, Format = DataSourceFormat.multijson, IngestionMapping = m_ingestionMapping
+                            DatabaseName = m_databaseName,
+                            TableName = m_tableName,
+                            Format = DataSourceFormat.multijson,
+                            IngestionMapping = m_ingestionMapping
                         },
                         new StreamSourceOptions
                         {
-                            SourceId = sourceId, LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip
+                            SourceId = sourceId,
+                            LeaveOpen = false,
+                            CompressionType = DataSourceCompressionType.GZip
                         }).ConfigureAwait(false);
                 }
             }
