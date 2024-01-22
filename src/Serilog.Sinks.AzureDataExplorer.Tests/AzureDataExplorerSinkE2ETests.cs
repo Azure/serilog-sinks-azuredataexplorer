@@ -120,13 +120,14 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     //[InlineData("Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable", "non-durable", 10)]
     public async Task Test_AzureDataExplorer_SerilogSink(string identifier, string runMode, int result)
     {
-        var randomInt = new Random().Next();
+        var randomInt = new Random().Next().ToString();
+        var distinctId = identifier + randomInt;
         if (String.Equals(runMode, "durable"))
         {
-            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt + Path.DirectorySeparatorChar + "logger-buffer";
-            if (!Directory.Exists(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt))
+            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId + Path.DirectorySeparatorChar + "logger-buffer";
+            if (!Directory.Exists(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId))
             {
-                Directory.CreateDirectory(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt);
+                Directory.CreateDirectory(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId);
             }
         }
         Logger log = GetSerilogAdxSink(identifier);
@@ -151,12 +152,11 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(30000);
-
+        await Task.Delay(20000);
         if (String.Equals(runMode, "durable"))
         {
             int lineCount = 0;
-            foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + randomInt, "*.clef"))
+            foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId, "*.clef"))
             {
                 Stream stream = System.IO.File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 StreamReader streamReader = new StreamReader(stream);
