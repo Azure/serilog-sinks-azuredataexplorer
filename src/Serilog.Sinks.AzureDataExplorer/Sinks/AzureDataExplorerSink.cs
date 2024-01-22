@@ -1,8 +1,11 @@
 ﻿using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using Kusto.Data.Common;
+using Kusto.Data.Exceptions;
 using Kusto.Ingest;
+using Kusto.Ingest.Exceptions;
 using Microsoft.IO;
+using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
 using Serilog.Sinks.PeriodicBatching;
@@ -84,9 +87,12 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
         private IKustoIngestClient m_ingestClient;
         private bool m_disposed;
 
+        private AzureDataExplorerSinkOptions m_options;
+
         public AzureDataExplorerSink(AzureDataExplorerSinkOptions options)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
+            m_options = options;
             m_databaseName = options.DatabaseName ?? throw new ArgumentNullException(nameof(options.DatabaseName));
             m_tableName = options.TableName ?? throw new ArgumentNullException(nameof(options.TableName));
             if (options.IngestionEndpointUri == null) throw new ArgumentNullException(nameof(options.IngestionEndpointUri));
@@ -134,45 +140,78 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
-            using (var dataStream = CreateStreamFromLogEvents(batch))
+            using var dataStream = CreateStreamFromLogEvents(batch);
+            for (int retry = 1; retry <= m_options.IngestionRetries; ++retry)
             {
-                var sourceId = Guid.NewGuid();
-                if (!m_streamingIngestion)
+                try
                 {
-                    await m_ingestClient.IngestFromStreamAsync(
-                        dataStream,
-                        new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
-                        {
-                            DatabaseName = m_databaseName,
-                            TableName = m_tableName,
-                            FlushImmediately = m_flushImmediately,
-                            Format = DataSourceFormat.multijson,
-                            IngestionMapping = m_ingestionMapping
-                        },
-                        new StreamSourceOptions
-                        {
-                            SourceId = sourceId,
-                            LeaveOpen = false,
-                            CompressionType = DataSourceCompressionType.GZip
-                        }).ConfigureAwait(false);
+                    var sourceId = Guid.NewGuid();
+                    if (!m_streamingIngestion)
+                    {
+                        await m_ingestClient.IngestFromStreamAsync(
+                            dataStream,
+                            new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
+                            {
+                                DatabaseName = m_databaseName,
+                                TableName = m_tableName,
+                                FlushImmediately = m_flushImmediately,
+                                Format = DataSourceFormat.multijson,
+                                IngestionMapping = m_ingestionMapping
+                            },
+                            new StreamSourceOptions
+                            {
+                                SourceId = sourceId,
+                                LeaveOpen = false,
+                                CompressionType = DataSourceCompressionType.GZip
+                            }).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await m_ingestClient.IngestFromStreamAsync(
+                            dataStream,
+                            new KustoIngestionProperties()
+                            {
+                                DatabaseName = m_databaseName,
+                                TableName = m_tableName,
+                                Format = DataSourceFormat.multijson,
+                                IngestionMapping = m_ingestionMapping
+                            },
+                            new StreamSourceOptions
+                            {
+                                SourceId = sourceId,
+                                LeaveOpen = false,
+                                CompressionType = DataSourceCompressionType.GZip
+                            }).ConfigureAwait(false);
+                    }
                 }
-                else
+                catch (KustoClientApplicationAuthenticationException ex)
                 {
-                    await m_ingestClient.IngestFromStreamAsync(
-                        dataStream,
-                        new KustoIngestionProperties()
+                    if (m_options.FailOnError)
+                    {
+                        SelfLog.WriteLine("Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials", ex);
+                        SelfLog.WriteLine("FailOnError is set to true, the exception will be thrown to the caller to handle the failure");
+                        throw new LoggingFailedException($"Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials.{ex.Message}");
+                    }
+                    SelfLog.WriteLine("Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials.", ex);
+
+                }
+                catch (IngestClientException ex)
+                {
+                    if (ex.IsPermanent)
+                    { // <- no retry
+                        if (m_options.FailOnError)
                         {
-                            DatabaseName = m_databaseName,
-                            TableName = m_tableName,
-                            Format = DataSourceFormat.multijson,
-                            IngestionMapping = m_ingestionMapping
-                        },
-                        new StreamSourceOptions
-                        {
-                            SourceId = sourceId,
-                            LeaveOpen = false,
-                            CompressionType = DataSourceCompressionType.GZip
-                        }).ConfigureAwait(false);
+                            SelfLog.WriteLine("Permanent ingestion failure ingesting to Kusto.FailOnError is set to true, the exception will be thrown to the caller to handle the failure", ex);
+                            throw new LoggingFailedException($"Permanent ingestion failure ingesting to Kusto.{ex.Message}");
+                        }
+                        // Since the failure is permanent, we can't retry, so we'll just log the error and continue.
+                        SelfLog.WriteLine("Permanent ingestion failure ingesting to Kusto.Since FailOnError is not set, the batch will be dropped", ex);
+                        break; // no more retries on unwanted exception
+                    }
+                    else
+                    {
+                        SelfLog.WriteLine($"Temporary failures writing to Kusto (Retry attempt {retry} of {m_options.IngestionRetries})", ex);
+                    }
                 }
             }
         }
