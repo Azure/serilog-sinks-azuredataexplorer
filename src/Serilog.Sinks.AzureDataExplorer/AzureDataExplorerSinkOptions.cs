@@ -71,6 +71,16 @@ namespace Serilog.Sinks.AzureDataExplorer
         public bool UseStreamingIngestion { get; set; }
 
         /// <summary>
+        /// In case of failure, Ignore the error and attempt to ingest the next batch. The default is false.
+        /// </summary>
+        public bool FailOnError { get; set; } = false;
+
+        /// <summary>
+        /// In case of failures of ingestion, the number of retries to attempt before giving up. The default is 3.
+        /// </summary>
+        public int IngestionRetries { get; set; } = 3;
+
+        /// <summary>
         /// Enables the durable mode. when specified, the logs are written to the bufferFileName first and then ingested to ADX
         /// </summary>
         public string BufferBaseFileName { get; set; }
@@ -83,7 +93,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         /// <summary>
         /// The interval at which buffer log files will roll over to a new file. The default is <see cref="RollingInterval.Hour"/>.
         /// </summary>
-        public RollingInterval BufferFileRollingInterval { get; set; }
+        public RollingInterval BufferFileRollingInterval { get; set; } = RollingInterval.Hour;
 
         /// <summary>
         /// The interval between checking the buffer files.

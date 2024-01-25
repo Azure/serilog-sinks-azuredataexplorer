@@ -41,25 +41,25 @@ namespace Serilog.Sinks.AzureDataExplorer
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             log.Verbose("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             log.Verbose("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             log.Verbose("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Warning("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Error(new Exception(), "Zohar Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
             log.Debug("Processed {@Position} in {Elapsed:000} ms. ", position, elapsedMs);
-            
+
             Thread.Sleep(10000);
         }
     }

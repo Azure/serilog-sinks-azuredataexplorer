@@ -2,7 +2,9 @@
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using Kusto.Data.Common;
+using Kusto.Data.Exceptions;
 using Kusto.Ingest;
+using Kusto.Ingest.Exceptions;
 using Microsoft.IO;
 using Serilog.Core;
 using Serilog.Debugging;
@@ -53,6 +55,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         private readonly IngestionMapping m_ingestionMapping;
         private readonly bool m_flushImmediately;
 
+        private readonly AzureDataExplorerSinkOptions m_options;
+
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(300);
 
         private static readonly TimeSpan TimeBetweenChecks = TimeSpan.FromSeconds(5);
@@ -60,50 +64,29 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
         /// <summary>
         /// constructor which initializes 
         /// </summary>
-        /// <param name="bufferBaseFilename"></param>
-        /// <param name="batchPostingLimit"></param>
-        /// <param name="period"></param>
-        /// <param name="eventBodyLimitBytes"></param>
-        /// <param name="levelControlSwitch"></param>
-        /// <param name="payloadReader"></param>
-        /// <param name="bufferSizeLimitBytes"></param>
-        /// <param name="ingestClient"></param>
-        /// <param name="flushImmediately"></param>
-        /// <param name="rollingInterval"></param>
-        /// <param name="formatProvider"></param>
-        /// <param name="databaseName"></param>
-        /// <param name="tableName"></param>
-        /// <param name="ingestionMapping"></param>
+
         public LogShipper(
-            string bufferBaseFilename,
-            int batchPostingLimit,
+            AzureDataExplorerSinkOptions options,
             TimeSpan period,
-            long? eventBodyLimitBytes,
-            LoggingLevelSwitch levelControlSwitch,
             IPayloadReader<TPayload> payloadReader,
-            long? bufferSizeLimitBytes,
             IKustoQueuedIngestClient ingestClient,
-            IFormatProvider formatProvider,
-            string databaseName,
-            string tableName,
-            IngestionMapping ingestionMapping,
-            bool flushImmediately,
-            RollingInterval rollingInterval = RollingInterval.Hour)
+            IngestionMapping ingestionMapping)
         {
-            m_batchPostingLimit = batchPostingLimit;
-            m_eventBodyLimitBytes = eventBodyLimitBytes;
+            m_options = options;
+            m_batchPostingLimit = options.BatchPostingLimit;
+            m_eventBodyLimitBytes = options.SingleEventSizePostingLimit;
             m_payloadReader = payloadReader;
-            m_controlledSwitch = new ControlledLevelSwitch(levelControlSwitch);
+            m_controlledSwitch = new ControlledLevelSwitch(options.BufferFileLoggingLevelSwitch);
             m_connectionSchedule = new ExponentialBackoffConnectionSchedule(period);
-            m_bufferSizeLimitBytes = bufferSizeLimitBytes;
-            m_fileSet = new FileSet(bufferBaseFilename, rollingInterval);
+            m_bufferSizeLimitBytes = options.BufferFileSizeLimitBytes;
+            m_fileSet = new FileSet(options.BufferBaseFileName, options.BufferFileRollingInterval);
             m_timer = new PortableTimer(c => OnTick());
             m_ingestClient = ingestClient;
-            m_formatProvider = formatProvider;
-            m_databaseName = databaseName;
-            m_tableName = tableName;
+            m_formatProvider = options.FormatProvider;
+            m_databaseName = options.DatabaseName;
+            m_tableName = options.TableName;
             m_ingestionMapping = ingestionMapping;
-            m_flushImmediately = flushImmediately;
+            m_flushImmediately = options.FlushImmediately;
             SetTimer();
         }
 
@@ -182,63 +165,98 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
 
                         if (count > 0 || m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow)
                         {
-                            IKustoIngestionResult result;
-                            m_nextRequiredLevelCheckUtc = DateTime.UtcNow.Add(RequiredLevelCheckInterval);
-                            using (var dataStream = CreateStreamFromLogEvents(payload))
+                            for (int retry = 1; retry <= m_options.IngestionRetries; ++retry)
                             {
-                                result = await m_ingestClient.IngestFromStreamAsync(
-                                    dataStream,
-                                    new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
-                                    {
-                                        DatabaseName = m_databaseName,
-                                        TableName = m_tableName,
-                                        FlushImmediately = m_flushImmediately,
-                                        Format = DataSourceFormat.multijson,
-                                        IngestionMapping = m_ingestionMapping,
-                                        ReportLevel = IngestionReportLevel.FailuresAndSuccesses,
-                                        ReportMethod = IngestionReportMethod.Table
-                                    },
-                                    new StreamSourceOptions
-                                    {
-                                        LeaveOpen = false, CompressionType = DataSourceCompressionType.GZip, SourceId = fileIdentifier
-                                    }).ConfigureAwait(false);
-                            }
-                            var ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
-
-                            while (true) //loop until the record is updated or we timeout
-                            {
-                                // check if the record is updated
-                                if (ingestionStatus.Status != Status.Pending)
+                                IKustoIngestionResult result;
+                                m_nextRequiredLevelCheckUtc = DateTime.UtcNow.Add(RequiredLevelCheckInterval);
+                                using var dataStream = CreateStreamFromLogEvents(payload);
+                                try
                                 {
-                                    break; // the record is updated, so we can exit the loop!
-                                }
+                                    result = await m_ingestClient.IngestFromStreamAsync(
+                                            dataStream,
+                                            new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
+                                            {
+                                                DatabaseName = m_databaseName,
+                                                TableName = m_tableName,
+                                                FlushImmediately = m_flushImmediately,
+                                                Format = DataSourceFormat.multijson,
+                                                IngestionMapping = m_ingestionMapping,
+                                                ReportLevel = IngestionReportLevel.FailuresAndSuccesses,
+                                                ReportMethod = IngestionReportMethod.Table
+                                            },
+                                            new StreamSourceOptions
+                                            {
+                                                LeaveOpen = false,
+                                                CompressionType = DataSourceCompressionType.GZip,
+                                                SourceId = fileIdentifier
+                                            }).ConfigureAwait(false);
+                                    var ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
+                                    while (true) //loop until the record is updated or we timeout
+                                    {
+                                        // check if the record is updated
+                                        if (ingestionStatus.Status != Status.Pending)
+                                        {
+                                            break; // the record is updated, so we can exit the loop!
+                                        }
 
-                                // check if we have exceeded our timeout
-                                if (stopWatch.Elapsed > Timeout)
+                                        // check if we have exceeded our timeout
+                                        if (stopWatch.Elapsed > Timeout)
+                                        {
+                                            break; // break loop if we timed out
+                                        }
+
+                                        // the record isn't updated & we haven't timed out, so the 
+                                        // loop will repeat. we're worried about querying the DB 
+                                        // too often, so we add a delay. this will work a lot like 
+                                        // a timer, but it is async and avoids reentrancy issues.
+                                        await Task.Delay(TimeBetweenChecks);
+                                        ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
+                                    }
+
+                                    if (ingestionStatus.Status == Status.Succeeded)
+                                    {
+                                        m_connectionSchedule.MarkSuccess();
+                                        bookmarkFile.WriteBookmark(position);
+                                    }
+                                    else
+                                    {
+                                        m_connectionSchedule.MarkFailure();
+                                        if (m_bufferSizeLimitBytes.HasValue)
+                                            m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
+
+                                        break;
+                                    }
+
+                                }
+                                catch (KustoClientApplicationAuthenticationException ex)
                                 {
-                                    break; // break loop if we timed out
+                                    if (m_options.FailOnError)
+                                    {
+                                        SelfLog.WriteLine("Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials", ex);
+                                        SelfLog.WriteLine("FailOnError is set to true, the exception will be thrown to the caller to handle the failure");
+                                        throw new LoggingFailedException($"Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials.{ex.Message}");
+                                    }
+                                    SelfLog.WriteLine(" sink due to authentication error (EmitBatchAsync). Please check your credentials.", ex);
+
                                 }
-
-                                // the record isn't updated & we haven't timed out, so the 
-                                // loop will repeat. we're worried about querying the DB 
-                                // too often, so we add a delay. this will work a lot like 
-                                // a timer, but it is async and avoids reentrancy issues.
-                                await Task.Delay(TimeBetweenChecks);
-                                ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
-                            }
-
-                            if (ingestionStatus.Status == Status.Succeeded)
-                            {
-                                m_connectionSchedule.MarkSuccess();
-                                bookmarkFile.WriteBookmark(position);
-                            }
-                            else
-                            {
-                                m_connectionSchedule.MarkFailure();
-                                if (m_bufferSizeLimitBytes.HasValue)
-                                    m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
-
-                                break;
+                                catch (IngestClientException ex)
+                                {
+                                    if (ex.IsPermanent)
+                                    { // <- no retry
+                                        if (m_options.FailOnError)
+                                        {
+                                            SelfLog.WriteLine("Permanent ingestion failure ingesting to Kusto.FailOnError is set to true, the exception will be thrown to the caller to handle the failure", ex);
+                                            throw new LoggingFailedException($"Permanent ingestion failure ingesting to Kusto.{ex.Message}");
+                                        }
+                                        // Since the failure is permanent, we can't retry, so we'll just log the error and continue.
+                                        SelfLog.WriteLine("Permanent ingestion failure ingesting to Kusto.Since FailOnError is not set, the batch will be dropped", ex);
+                                        break; // no more retries on unwanted exception
+                                    }
+                                    else
+                                    {
+                                        SelfLog.WriteLine($"Temporary failures writing to Kusto (Retry attempt {retry} of {m_options.IngestionRetries})", ex);
+                                    }
+                                }
                             }
                         }
                         else if (position.File == null)

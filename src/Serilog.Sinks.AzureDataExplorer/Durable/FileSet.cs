@@ -28,7 +28,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             m_logFolder = Path.GetDirectoryName(m_bookmarkFilename);
             m_candidateSearchPath = Path.GetFileName(bufferBaseFilename) + "-*.clef";
             var dateRegularExpressionPart = rollingInterval.GetMatchingDateRegularExpressionPart();
-            m_filenameMatcher = new Regex("^" + Regex.Escape(Path.GetFileName(bufferBaseFilename)) + "-(?<date>" 
+            m_filenameMatcher = new Regex("^" + Regex.Escape(Path.GetFileName(bufferBaseFilename)) + "-(?<date>"
                                          + dateRegularExpressionPart + ")(?<sequence>_[0-9]{3,}){0,1}\\.clef");
         }
 

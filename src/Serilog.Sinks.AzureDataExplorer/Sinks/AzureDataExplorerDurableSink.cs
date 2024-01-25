@@ -134,21 +134,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             var payloadReader = new AzureDataExplorerPayloadReader(
                 rollingInterval: options.BufferFileRollingInterval);
 
+
             m_shipper = new LogShipper<List<LogEvent>>(
-                bufferBaseFilename: options.BufferBaseFileName,
-                batchPostingLimit: options.BatchPostingLimit,
+                options: options,
                 period: options.BufferLogShippingInterval ?? TimeSpan.FromSeconds(5),
-                eventBodyLimitBytes: options.SingleEventSizePostingLimit,
-                levelControlSwitch: options.BufferFileLoggingLevelSwitch,
                 payloadReader: payloadReader,
-                bufferSizeLimitBytes: options.BufferFileSizeLimitBytes,
-                rollingInterval: options.BufferFileRollingInterval,
                 ingestClient: m_kustoQueuedIngestClient,
-                formatProvider: formatProvider,
-                databaseName: databaseName,
-                tableName: tableName,
-                ingestionMapping: ingestionMapping,
-                flushImmediately: flushImmediately
+                ingestionMapping: ingestionMapping
             );
         }
 
