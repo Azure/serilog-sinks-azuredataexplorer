@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" />
+	 <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.3.1" />
     <PackageReference Include="serilog" />
     <PackageReference Include="Serilog.Formatting.Compact" />
     <PackageReference Include="Serilog.Formatting.Compact.Reader" />
