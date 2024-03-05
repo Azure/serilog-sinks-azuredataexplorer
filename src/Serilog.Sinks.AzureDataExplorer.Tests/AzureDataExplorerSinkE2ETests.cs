@@ -53,6 +53,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     private readonly string? m_generatedTableName;
     private readonly KustoConnectionStringBuilder? m_kustoConnectionStringBuilder;
     private readonly IEnumerable<SinkColumnMapping> m_columnMappings;
+    private readonly ICslQueryProvider m_queryProvider;
 
     public AzureDataExplorerSinkE2ETests()
     {
@@ -70,7 +71,8 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 Environment.GetEnvironmentVariable("databaseName"))
             .WithAadApplicationKeyAuthentication(Environment.GetEnvironmentVariable("appId"),
                 Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant"));
-        using (var kustoClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
+        m_queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
+        using (var kustoAdminClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
         {
             var command = CslCommandGenerator.GenerateTableCreateCommand(m_generatedTableName,
                 new[]
@@ -88,10 +90,10 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 new IngestionBatchingPolicy(TimeSpan.FromSeconds(5), 10, 1024));
             var enableStreamingIngestion =
                 CslCommandGenerator.GenerateTableAlterStreamingIngestionPolicyCommand(m_generatedTableName, true);
-            kustoClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command);
-            kustoClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command);
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
                 alterBatchingPolicy);
-            kustoClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
                 enableStreamingIngestion);
         }
         m_columnMappings = new[]
@@ -129,7 +131,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
     [Theory]
     //[InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_Durable", "durable", 10)]
-    //[InlineData("Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable", "durable", 2)]
+    [InlineData("Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable", "durable", 2)]
     [InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_NonDurable", "non-durable", 10)]
     //[InlineData("Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable", "non-durable", 10)]
     public async Task Test_AzureDataExplorer_SerilogSink(string identifier, string runMode, int result)
@@ -152,17 +154,17 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             Longitude = 134
         };
         var elapsedMs = 34;
-
         log.Verbose(" {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position, elapsedMs);
         log.Information(" {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position, elapsedMs);
         log.Warning(" {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position, elapsedMs);
-        log.Error(" {Identifier} Zohar Processed {@Position} in {Elapsed:000} ms.", identifier, position,
+        // Add the Error part as well
+        log.Error(GetException(), " {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position,
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
         log.Verbose(" {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position, elapsedMs);
         log.Information(" {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position, elapsedMs);
         log.Warning(" {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position, elapsedMs);
-        log.Error(" {Identifier} Zohar Processed {@Position} in {Elapsed:000} ms.", identifier, position,
+        log.Error(GetException(), " {Identifier} Processed {@Position} in {Elapsed:000} ms.", identifier, position,
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
@@ -186,9 +188,11 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             }
             Assert.Equal(result, lineCount);
         }
-
         int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifier);
         Assert.Equal(result, noOfRecordsIngested);
+        var actualExceptionIngested = GetExceptionIngested();
+        Assert.Contains("A nested exception!", actualExceptionIngested);
+        Assert.Contains("Percentages must be between 0 and 100", actualExceptionIngested);
     }
 
     private Logger GetSerilogAdxSink(string identifier)
@@ -274,16 +278,37 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         return logger;
     }
 
+    private Exception GetException()
+    {
+        Exception ex;
+
+        try
+        {
+            throw new ArgumentOutOfRangeException("SamplingPercentage", 101, "Percentages must be between 0 and 100.");
+        }
+        catch (Exception innerException)
+        {
+            try
+            {
+                throw new Exception("A nested exception!", innerException);
+            }
+            catch (Exception outer)
+            {
+                ex = outer;
+            }
+        }
+        return ex;
+    }
+
     private int GetNoOfRecordsIngestedInAdx(string searchString)
     {
         var noOfRecordsIngested = 0;
-        using var queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
         string query = $"{m_generatedTableName} | where Message contains '{searchString}' | count ";
         var clientRequestProperties = new ClientRequestProperties()
         {
             ClientRequestId = Guid.NewGuid().ToString()
         };
-        using (var reader = queryProvider.ExecuteQuery(Environment.GetEnvironmentVariable("databaseName"), query,
+        using (var reader = m_queryProvider.ExecuteQuery(Environment.GetEnvironmentVariable("databaseName"), query,
                    clientRequestProperties))
         {
             // Read HowManyRecords
@@ -292,9 +317,30 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 noOfRecordsIngested = (int)reader.GetInt64(0);
             }
         }
-
         return noOfRecordsIngested;
     }
+
+    private string GetExceptionIngested()
+    {
+        var exception = "";
+        using var queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
+        string query = $"{m_generatedTableName} | where Level == 'Error' | project Exception";
+        var clientRequestProperties = new ClientRequestProperties()
+        {
+            ClientRequestId = Guid.NewGuid().ToString()
+        };
+        using (var reader = queryProvider.ExecuteQuery(Environment.GetEnvironmentVariable("databaseName"), query,
+                   clientRequestProperties))
+        {
+            // Read the exception
+            while (reader.Read())
+            {
+                exception = reader.GetString(0);
+            }
+        }
+        return exception;
+    }
+
 
     public void Dispose()
     {
@@ -305,8 +351,9 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             {
                 ClientRequestId = Guid.NewGuid().ToString()
             };
-            queryProvider.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command,
-                clientRequestProperties);
+            // queryProvider.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command,
+            //     clientRequestProperties);
         }
+        m_queryProvider.Dispose();
     }
 }
