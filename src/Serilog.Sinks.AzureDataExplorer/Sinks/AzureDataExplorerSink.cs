@@ -14,6 +14,7 @@
 
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Kusto.Data.Common;
 using Kusto.Data.Exceptions;
 using Kusto.Ingest;
@@ -30,6 +31,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 {
     internal sealed class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
     {
+        private static readonly JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            Converters =
+            {
+                new ExceptionsJsonConverter<Exception>()
+            }
+        };
         private static readonly RecyclableMemoryStreamManager SRecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
 
         private static readonly List<ColumnMapping> SDefaultIngestionColumnMapping = new List<ColumnMapping>
@@ -243,7 +251,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                 {
                     foreach (var logEvent in batch)
                     {
-                        System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider));
+                        System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider), options);
                     }
                 }
             }
