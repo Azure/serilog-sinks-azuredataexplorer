@@ -1,5 +1,20 @@
-﻿using System.IO.Compression;
+﻿// Copyright 2014 Serilog Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Kusto.Data.Common;
 using Kusto.Data.Exceptions;
 using Kusto.Ingest;
@@ -16,6 +31,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
 {
     internal sealed class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
     {
+        private static readonly JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            Converters =
+            {
+                new ExceptionsJsonConverter<Exception>()
+            }
+        };
         private static readonly RecyclableMemoryStreamManager SRecyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
 
         private static readonly List<ColumnMapping> SDefaultIngestionColumnMapping = new List<ColumnMapping>
@@ -229,7 +251,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
                 {
                     foreach (var logEvent in batch)
                     {
-                        System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider));
+                        System.Text.Json.JsonSerializer.Serialize(compressionStream, logEvent.Dictionary(m_formatProvider), options);
                     }
                 }
             }
