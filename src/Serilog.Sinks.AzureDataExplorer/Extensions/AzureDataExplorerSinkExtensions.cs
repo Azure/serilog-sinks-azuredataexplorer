@@ -1,18 +1,4 @@
-﻿// Copyright 2014 Serilog Contributors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-using Serilog.Configuration;
+﻿using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Sinks;
@@ -72,9 +58,12 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             bool flushImmediately = true,
             string mappingName = null,
             string bufferBaseFileName = null,
-            //int batchPostingLimit,
-            //TimeSpan batchPeriod,
-            //int queueSizeLimit,
+            int bufferFileCountLimit = 20,
+            long bufferFileSizeLimitBytes = 10L * 1024 * 1024,
+            string bufferFileOutputFormat =
+                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+            bool useStreamingIngestion = false,
+
             
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
@@ -112,14 +101,6 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 throw new ArgumentNullException(nameof(tenantId));
             }
 
-            var batchingOptions = new PeriodicBatchingSinkOptions
-            {
-                //BatchSizeLimit = batchPostingLimit,
-                //Period = batchPeriod,
-                //EagerlyEmitFirstEvent = true,
-                //QueueLimit = queueSizeLimit
-            };
-
             AzureDataExplorerSinkOptions options = new AzureDataExplorerSinkOptions()
             {
                 IngestionEndpointUri = ingestionUri,
@@ -128,8 +109,20 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 BufferBaseFileName = bufferBaseFileName,
                 FlushImmediately = flushImmediately,
                 MappingName = mappingName,
+                UseStreamingIngestion = useStreamingIngestion,
+                BufferFileCountLimit = bufferFileCountLimit,
+                BufferFileSizeLimitBytes = bufferFileSizeLimitBytes,
+                BufferFileOutputFormat = bufferFileOutputFormat,
 
             }.WithAadApplicationKey(applicationClientId: applicationClientId, applicationKey: applicationSecret, authority: tenantId);
+
+            var batchingOptions = new PeriodicBatchingSinkOptions
+            {
+                BatchSizeLimit = options.BatchPostingLimit,
+                Period = options.Period,
+                EagerlyEmitFirstEvent = true,
+                QueueLimit = options.QueueSizeLimit
+            };
 
 
             var azureDataExplorerSink = new AzureDataExplorerSink(options);
