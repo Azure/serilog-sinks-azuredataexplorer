@@ -52,6 +52,46 @@ For example:
 new SinkColumnMapping { ColumnName ="Exception", ColumnType ="string", ValuePath = "$.ExceptionEx" }
 ```
 
+Configuration of Azure Data Explorer Serilog sink through appsettings.json
+
+Sample appsettings.json contents 
+```json
+{
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.AzureDataExplorer" ],
+    "MinimumLevel": "Verbose",
+    "WriteTo": [
+      {
+        "Name": "AzureDataExplorerSink",
+        "Args": {
+          "ingestionUri": "https://ingest-cluster-name",
+          "databaseName": "sample",
+          "tableName": "table",
+          "applicationClientId": "xxxxxxxx",
+          "applicationSecret": "xxxxxxx",
+          "tenantId": "xxxxxxx"
+        }
+      }
+    ]
+  }
+}
+```
+
+The appsettings.json can be loaded through the following piece of code
+```csharp
+var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+var logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(configuration)
+            .CreateLogger();
+```
+
+The following nuget dependecies needs to be downloaded for the configuration through appsettings.json
+Microsoft.Extensions.Configuration, Microsoft.Extensions.Configuration.Json, Serilog.Settings.Configuration
+
 ## Features
 
 * Supports both Queued and Streaming ingestion
