@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Azure.Identity;
 using Kusto.Data;
 
 namespace Serilog.Sinks.AzureDataExplorer.Extensions
@@ -20,7 +21,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
     {
         private const string AppName = "Serilog.Sinks.AzureDataExplorer";
 
-        private const string ClientVersion = "1.0.8";
+        private const string ClientVersion = "1.0.9";
 
         public static KustoConnectionStringBuilder GetKustoConnectionStringBuilder(
             this AzureDataExplorerSinkOptions options)
@@ -73,9 +74,12 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 case AuthenticationMode.AadUserManagedIdentity:
                     kcsb = kcsb.WithAadUserManagedIdentity(options.ApplicationClientId);
                     break;
+                case AuthenticationMode.AadWorkloadIdentity:
+                    kcsb = kcsb.WithAadAzureTokenCredentialsAuthentication(new WorkloadIdentityCredential());
+                    break;
                 case AuthenticationMode.AadUserPrompt:
                 default:
-                    kcsb = kcsb.WithAadUserPromptAuthentication(options.Authority);
+                    kcsb = kcsb.WithAadAzureTokenCredentialsAuthentication(new ChainedTokenCredential(new AzureCliCredential(),new InteractiveBrowserCredential()));
                     break;
             }
 
