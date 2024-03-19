@@ -172,4 +172,7 @@ new AzureDataExplorerSinkOptions()
 | AadApplicationToken       | WithAadApplicationToken       |                                   |
 | AadAzureTokenCredentials  | WithAadAzureTokenCredentials  |                                   |
 | AadUserManagedIdentity    | WithAadUserManagedIdentity    |                                   |
-| AadSystemManagedIdentity  | WithAadSystemManagedIdentity    |                                   |
+| AadSystemManagedIdentity  | WithAadSystemManagedIdentity  |                                   |
+| AadWorkloadIdentity       | WithWorkloadIdentity          |                                   |
+
+Note that if none of the authentication options are provided, AzCliIdentity , followed by AadUserPrompt will be attempted.

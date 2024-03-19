@@ -242,6 +242,12 @@ namespace Serilog.Sinks.AzureDataExplorer
             return this;
         }
 
+        public AzureDataExplorerSinkOptions WithWorkloadIdentity()
+        {
+            AuthenticationMode = AuthenticationMode.AadWorkloadIdentity;
+            return this;
+        }
+
         public AzureDataExplorerSinkOptions WithAadApplicationKey(string applicationClientId, string applicationKey, string authority)
         {
             AuthenticationMode = AuthenticationMode.AadApplicationKey;
@@ -312,6 +318,7 @@ namespace Serilog.Sinks.AzureDataExplorer
         AadApplicationToken,
         AadAzureTokenCredentials,
         AadUserManagedIdentity,
-        AadSystemManagedIdentity
+        AadSystemManagedIdentity,
+        AadWorkloadIdentity
     }
 }
