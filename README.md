@@ -136,6 +136,11 @@ This mapping can be overridden using the following options:
 * MappingName: Use a data mapping configured in ADX.
 * ColumnsMapping: Use an ingestion-time data mapping.
 
+  Note: If we need detailed exception messages along with stackTrace, innerExceptionDetails etc please use
+| Column Name | Column Type | JSON Path        | 
+|-------------|-------------|------------------|
+| Exception   | string      | $.ExceptionEx    |
+
 ### Durable Mode
 
 Durable mode can be turned on when we specify the bufferFileName in the LoggerConfiguration. There are few other options available when the durable mode is enabled.
