@@ -69,6 +69,8 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string applicationClientId,
             string applicationSecret,
             string tenantId,
+            bool isManagedIdentity = false,
+            bool isWorkloadIdentity = false,
             bool flushImmediately = true,
             string mappingName = null,
             string bufferBaseFileName = null,
@@ -78,7 +80,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
             bool useStreamingIngestion = false,
 
-            
+
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (loggerConfiguration == null)
@@ -128,7 +130,29 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 BufferFileSizeLimitBytes = bufferFileSizeLimitBytes,
                 BufferFileOutputFormat = bufferFileOutputFormat,
 
-            }.WithAadApplicationKey(applicationClientId: applicationClientId, applicationKey: applicationSecret, authority: tenantId);
+            };
+
+            if (isManagedIdentity)
+            {
+                if (string.Equals(applicationClientId, "system", StringComparison.OrdinalIgnoreCase))
+                {
+                    options = options.WithAadSystemAssignedManagedIdentity();
+                }
+                else
+                {
+                    options = options.WithAadUserAssignedManagedIdentity(applicationClientId);
+                }
+
+            }
+            else if (isWorkloadIdentity)
+            {
+                options = options.WithWorkloadIdentity();
+            }
+            else
+            {
+                options = options.WithAadApplicationKey(applicationClientId: applicationClientId, applicationKey: applicationSecret, authority: tenantId);
+            }
+
 
             var batchingOptions = new PeriodicBatchingSinkOptions
             {

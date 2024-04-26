@@ -8,10 +8,21 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    environment: build
+    permissions:
+      checks: write
+      pull-requests: write
+      id-token: write
+      contents: read  
 
     steps:
+    - name: Azure login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.APP_ID }}
+        tenant-id: ${{ secrets.TENANT }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}      
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -26,6 +37,5 @@ jobs:
         ingestionURI : ${{secrets.INGESTION_URI}}
         databaseName : ${{secrets.DATABASE_NAME}}
         appId : ${{secrets.APP_ID}}
-        appKey : ${{secrets.APP_KEY}}
         tenant : ${{secrets.TENANT}}
       run: dotnet test src --no-build --verbosity normal
