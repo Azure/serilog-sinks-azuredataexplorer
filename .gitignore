@@ -350,4 +350,4 @@ MigrationBackup/
 .ionide/
 **/.vscode
 **/.vscode/*
-src/run-tests.sh
+**/run_tests.sh
