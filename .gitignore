@@ -351,3 +351,4 @@ MigrationBackup/
 **/.vscode
 **/.vscode/*
 **/run_tests.sh
+src/run-tests.sh
