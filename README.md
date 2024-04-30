@@ -69,7 +69,9 @@ Sample appsettings.json contents
           "tableName": "table",
           "applicationClientId": "xxxxxxxx",
           "applicationSecret": "xxxxxxx",
-          "tenantId": "xxxxxxx"
+          "tenantId": "xxxxxxx",
+          "isManagedIdentity": false,
+          "isWorkloadIdentity": false,
         }
       }
     ]

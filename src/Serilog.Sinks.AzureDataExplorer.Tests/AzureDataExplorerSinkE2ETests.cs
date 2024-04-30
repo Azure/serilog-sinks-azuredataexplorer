@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Azure.Core;
+using Azure.Identity;
+using Kusto.Cloud.Platform.Security;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
@@ -25,7 +28,6 @@ namespace Serilog.Sinks.AzureDataExplorer;
  * ingestionURI : ingestion URL of ADX
  * databaseName : database name 
  * appId : Application client Id
- * appKey : Application client key
  * tenant : Authority
  *- The above mentioned parameters needs to be set as environment variables in the respective environments. 
  
@@ -35,7 +37,6 @@ namespace Serilog.Sinks.AzureDataExplorer;
  * $env:databaseName="<databaseName>"
  * $env:tableName="<tableName>"
  * $env:appId="<appId>"
- * $env:appKey="<appKey>"
  * $env:tenant="<tenant"
 
  * For Linux based environments, in terminal set the following parameters
@@ -43,7 +44,6 @@ namespace Serilog.Sinks.AzureDataExplorer;
  * export databaseName="<databaseName>"
  * export tableName="<tableName>"
  * export appId="<appId>"
- * export appKey="<appKey>"
  * export tenant="<tenant"
  */
 
@@ -55,22 +55,25 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     private readonly IEnumerable<SinkColumnMapping> m_columnMappings;
     private readonly ICslQueryProvider m_queryProvider;
 
+    private readonly string m_accessToken;
+
     public AzureDataExplorerSinkE2ETests()
     {
         Assert.NotNull(Environment.GetEnvironmentVariable("ingestionURI"));
         Assert.NotNull(Environment.GetEnvironmentVariable("databaseName"));
         Assert.NotNull(Environment.GetEnvironmentVariable("appId"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("appKey"));
         Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
         m_bufferBaseFileName = "";
         var randomInt = new Random().Next();
         m_generatedTableName = "Serilog_" + randomInt;
+        var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
+        var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
+        m_accessToken = new AzureCliCredential().GetToken(tokenRequestContext).Token;
         m_kustoConnectionStringBuilder = new KustoConnectionStringBuilder(
                 AzureDataExplorerSinkOptionsExtensions.GetClusterUrl(
                     Environment.GetEnvironmentVariable("ingestionURI")),
                 Environment.GetEnvironmentVariable("databaseName"))
-            .WithAadApplicationKeyAuthentication(Environment.GetEnvironmentVariable("appId"),
-                Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant"));
+            .WithAadUserTokenAuthentication(m_accessToken);
         m_queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
         using (var kustoAdminClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
         {
@@ -214,8 +217,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         BufferFileRollingInterval = RollingInterval.Minute,
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    }.WithAadUserToken(m_accessToken))
                     .CreateLogger();
                 break;
             case "Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable":
@@ -233,8 +235,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         BufferFileLoggingLevelSwitch = new LoggingLevelSwitch(Events.LogEventLevel.Error),
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    }.WithAadUserToken(m_accessToken))
                     .CreateLogger();
                 break;
             case "Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_NonDurable":
@@ -249,8 +250,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         TableName = m_generatedTableName,
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    }.WithAadUserToken(m_accessToken))
                     .CreateLogger();
                 break;
             case "Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable":
@@ -266,8 +266,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                         UseStreamingIngestion = true,
                         FlushImmediately = true,
                         ColumnsMapping = m_columnMappings
-                    }.WithAadApplicationKey(Environment.GetEnvironmentVariable("appId"),
-                        Environment.GetEnvironmentVariable("appKey"), Environment.GetEnvironmentVariable("tenant")))
+                    }.WithAadUserToken(m_accessToken))
                     .CreateLogger();
                 break;
             default:

@@ -21,7 +21,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
     {
         private const string AppName = "Serilog.Sinks.AzureDataExplorer";
 
-        private const string ClientVersion = "1.0.9";
+        private const string ClientVersion = "1.1.0";
 
         public static KustoConnectionStringBuilder GetKustoConnectionStringBuilder(
             this AzureDataExplorerSinkOptions options)
@@ -79,7 +79,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                     break;
                 case AuthenticationMode.AadUserPrompt:
                 default:
-                    kcsb = kcsb.WithAadAzureTokenCredentialsAuthentication(new ChainedTokenCredential(new AzureCliCredential(),new InteractiveBrowserCredential()));
+                    kcsb = kcsb.WithAadAzureTokenCredentialsAuthentication(new ChainedTokenCredential(new AzureCliCredential(), new InteractiveBrowserCredential()));
                     break;
             }
 
