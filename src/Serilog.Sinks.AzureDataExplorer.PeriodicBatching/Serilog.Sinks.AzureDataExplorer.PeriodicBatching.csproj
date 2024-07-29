@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  
+    <ItemGroup>
+      <PackageReference Include="serilog" />
+      <PackageReference Include="Serilog.Sinks.Console" />
+      <PackageReference Include="Serilog.Sinks.File" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Serilog.Sinks.AzureDataExplorer\Serilog.Sinks.AzureDataExplorer.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Serilog.Sinks.File" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Samples" />
+    </ItemGroup>
+</Project>
