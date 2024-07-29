@@ -25,11 +25,11 @@ using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
 using Serilog.Sinks.PeriodicBatching;
 
-[assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests,PublicKey=" + "002400000480000094000000060200000024000052534131000400000100010025d2229d740f195c0a4cdcb468a4ed69c33a9f2738727a6c34a80ab8b75263a33bd5ac958f0e8b82658a7ee429cc4536166a7ac908691c600a84b20a67db8f5324f43a168a93665f6b449588d2168d6189a27f41bf7b95e6cd1f184bf6f9f9020429972e3132f34f60777ff25edd96d0527d88d2adb4dffa4ed31016aa6cc5b0")]
+// [assembly: InternalsVisibleTo("Serilog.Sinks.AzureDataExplorer.Tests,PublicKey=" + "002400000480000094000000060200000024000052534131000400000100010025d2229d740f195c0a4cdcb468a4ed69c33a9f2738727a6c34a80ab8b75263a33bd5ac958f0e8b82658a7ee429cc4536166a7ac908691c600a84b20a67db8f5324f43a168a93665f6b449588d2168d6189a27f41bf7b95e6cd1f184bf6f9f9020429972e3132f34f60777ff25edd96d0527d88d2adb4dffa4ed31016aa6cc5b0")]
 
 namespace Serilog.Sinks.AzureDataExplorer.Sinks
 {
-    internal sealed class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
+    public class AzureDataExplorerSink : IBatchedLogEventSink, IDisposable
     {
         private static readonly JsonSerializerOptions options = new JsonSerializerOptions()
         {
@@ -163,11 +163,11 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
             using var dataStream = CreateStreamFromLogEvents(batch);
+            var sourceId = Guid.NewGuid();
             for (int retry = 1; retry <= m_options.IngestionRetries; ++retry)
             {
                 try
                 {
-                    var sourceId = Guid.NewGuid();
                     if (!m_streamingIngestion)
                     {
                         await m_ingestClient.IngestFromStreamAsync(

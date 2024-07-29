@@ -12,6 +12,7 @@
       <PackageReference Include="serilog" />
       <PackageReference Include="Serilog.Sinks.Console" />
       <PackageReference Include="Serilog.Sinks.File" />
+      <PackageReference Include="Serilog.Sinks.PeriodicBatching"/>
     </ItemGroup>
 
     <ItemGroup>
