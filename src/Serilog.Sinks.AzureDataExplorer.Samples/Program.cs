@@ -32,9 +32,10 @@ namespace Serilog.Sinks.AzureDataExplorer
                     TableName = Environment.GetEnvironmentVariable("tableName"),
                     FlushImmediately = Environment.GetEnvironmentVariable("flushImmediately").IsNotNullOrEmpty() && bool.Parse(Environment.GetEnvironmentVariable("flushImmediately")!),
                     BufferBaseFileName = Environment.GetEnvironmentVariable("bufferBaseFileName"),
+                    /*configure the following variables to enable Periodic Batching
                     BatchPostingLimit = 10,
                     Period = TimeSpan.FromSeconds(5),
-
+                    */
                     ColumnsMapping = new[]
                     {
                         new SinkColumnMapping { ColumnName ="Timestamp", ColumnType ="datetime", ValuePath = "$.Timestamp" } ,
