@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!--    add your PackageVersion nodes here -->
-    <PackageVersion Include="Microsoft.Azure.Kusto.Ingest" Version="12.2.3" />
+    <PackageVersion Include="Microsoft.Azure.Kusto.Ingest" Version="12.2.4" />
     <PackageVersion Include="serilog" Version="4.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
