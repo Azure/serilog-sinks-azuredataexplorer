@@ -79,6 +79,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string bufferFileOutputFormat =
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
             bool useStreamingIngestion = false,
+            int batchPostingLimit = 1000, 
+            double period = 10,
+            int queueSizeLimit = 100000,
 
 
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
@@ -129,6 +132,9 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 BufferFileCountLimit = bufferFileCountLimit,
                 BufferFileSizeLimitBytes = bufferFileSizeLimitBytes,
                 BufferFileOutputFormat = bufferFileOutputFormat,
+                BatchPostingLimit = batchPostingLimit,
+                Period = TimeSpan.FromSeconds(period),
+                QueueSizeLimit = queueSizeLimit,
 
             };
 

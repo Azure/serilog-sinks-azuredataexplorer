@@ -52,9 +52,11 @@ For example:
 new SinkColumnMapping { ColumnName ="Exception", ColumnType ="string", ValuePath = "$.ExceptionEx" }
 ```
 
-Configuration of Azure Data Explorer Serilog sink through appsettings.json
+## Configuration of Azure Data Explorer Serilog sink through appsettings.json
 
-Sample appsettings.json contents 
+You can configure the Azure Data Explorer Serilog Sink using an appsettings.json file. Below is a sample appsettings.json file that includes the Periodic Batching configuration options: batchPostingLimit, period, and queueSizeLimit.
+
+**Sample appsettings.json contents**
 ```json
 {
   "Serilog": {
@@ -72,14 +74,25 @@ Sample appsettings.json contents
           "tenantId": "xxxxxxx",
           "isManagedIdentity": false,
           "isWorkloadIdentity": false,
+          "batchPostingLimit": 1000,  // Optional
+          "period": 10.0,             // Optional (in seconds)
+          "queueSizeLimit": 100000    // Optional
         }
       }
     ]
   }
 }
 ```
+**Parameters for Periodic Batching:**
+
+***batchPostingLimit:*** Specifies the maximum number of events to include in a batch. Defaults to 1000.
+
+***period:*** Specifies the time in seconds between checking for event batches to post. Defaults to 10 seconds.
+
+***queueSizeLimit:*** Specifies the maximum number of events in the queue. Once this limit is reached, new events will be dropped until the queue size decreases. Defaults to 100000.
 
 The appsettings.json can be loaded through the following piece of code
+
 ```csharp
 var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
@@ -91,8 +104,15 @@ var logger = new LoggerConfiguration()
             .CreateLogger();
 ```
 
-The following nuget dependecies needs to be downloaded for the configuration through appsettings.json
-Microsoft.Extensions.Configuration, Microsoft.Extensions.Configuration.Json, Serilog.Settings.Configuration
+**Required NuGet Packages**
+
+Ensure you have the following NuGet dependencies to enable configuration through appsettings.json:
+
+- Microsoft.Extensions.Configuration
+- Microsoft.Extensions.Configuration.Json
+- Serilog.Settings.Configuration
+
+
 
 ## Features
 
