@@ -211,16 +211,14 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             .AddEnvironmentVariables()
             .Build();
 
-        var configurationUpdates = new Dictionary<string, string?>();
-        if (m_accessToken != null)
+        var configurationUpdates = new Dictionary<string, string?>
         {
-            configurationUpdates.Add("Serilog:WriteTo:0:Args:userToken", m_accessToken);
-        }
-        if (m_generatedTableName != null)
-        {
-            configurationUpdates.Add("Serilog:WriteTo:0:Args:tableName", m_generatedTableName);
-        }
-
+            { "Serilog:WriteTo:0:Args:ingestionUri", Environment.GetEnvironmentVariable("ingestionURI")},
+            { "Serilog:WriteTo:0:Args:databaseName", Environment.GetEnvironmentVariable("databaseName")},
+            { "Serilog:WriteTo:0:Args:userToken", m_accessToken },
+            { "Serilog:WriteTo:0:Args:tableName", m_generatedTableName },
+        };
+        
         configuration = new ConfigurationBuilder()
             .AddConfiguration(configuration)
             .AddInMemoryCollection(configurationUpdates) 
