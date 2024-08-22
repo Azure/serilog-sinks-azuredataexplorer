@@ -18,8 +18,11 @@ using Kusto.Cloud.Platform.Security;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
+using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
+using Serilog;
+using System.IO;
 
 namespace Serilog.Sinks.AzureDataExplorer;
 
@@ -196,6 +199,57 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         var actualExceptionIngested = GetExceptionIngested();
         Assert.Contains("A nested exception!", actualExceptionIngested);
         Assert.Contains("Percentages must be between 0 and 100", actualExceptionIngested);
+    
+        await Test_AppSettingsConfiguration();
+    }
+
+    private async Task Test_AppSettingsConfiguration()
+    {
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile(path: "appsettings.json", optional: false, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var configurationUpdates = new Dictionary<string, string?>();
+        if (m_accessToken != null)
+        {
+            configurationUpdates.Add("Serilog:WriteTo:0:Args:userToken", m_accessToken);
+        }
+        if (m_generatedTableName != null)
+        {
+            configurationUpdates.Add("Serilog:WriteTo:0:Args:tableName", m_generatedTableName);
+        }
+
+        configuration = new ConfigurationBuilder()
+            .AddConfiguration(configuration)
+            .AddInMemoryCollection(configurationUpdates) 
+            .Build();
+
+        var logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(configuration)
+            .WriteTo.Console()
+            .CreateLogger();
+
+        Assert.NotNull(logger);
+
+        Log.Logger = logger;
+
+        var position = new { Latitude = 25, Longitude = 134 };
+        var elapsedMs = 34;
+
+        Log.Verbose("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+        Log.Information("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+        Log.Warning("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+        Log.Error(new Exception(), "Error occurred while processing (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+        Log.Debug("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+        
+        await Task.Delay(40000);
+
+        Log.CloseAndFlush();
+
+        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx("AppSettingsJSON");
+        Assert.Equal(5, noOfRecordsIngested);
     }
 
     private Logger GetSerilogAdxSink(string identifier)

@@ -69,6 +69,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string applicationClientId,
             string applicationSecret,
             string tenantId,
+            string userToken = null, 
             bool isManagedIdentity = false,
             bool isWorkloadIdentity = false,
             bool flushImmediately = true,
@@ -153,6 +154,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             else if (isWorkloadIdentity)
             {
                 options = options.WithWorkloadIdentity();
+            }
+            else if (!string.IsNullOrEmpty(userToken))
+            {
+                options = options.WithAadUserToken(userToken: userToken);
             }
             else
             {
