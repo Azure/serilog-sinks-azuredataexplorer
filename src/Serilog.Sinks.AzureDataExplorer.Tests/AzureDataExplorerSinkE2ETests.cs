@@ -53,7 +53,7 @@ namespace Serilog.Sinks.AzureDataExplorer;
 public class AzureDataExplorerSinkE2ETests : IDisposable
 {
     private string? m_bufferBaseFileName;
-    private readonly string? m_generatedTableName;
+    internal static readonly string? m_generatedTableName = "Serilog_" + new Random().Next();
     private readonly KustoConnectionStringBuilder? m_kustoConnectionStringBuilder;
     private readonly IEnumerable<SinkColumnMapping> m_columnMappings;
     private readonly ICslQueryProvider m_queryProvider;
@@ -67,8 +67,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         Assert.NotNull(Environment.GetEnvironmentVariable("appId"));
         Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
         m_bufferBaseFileName = "";
-        var randomInt = new Random().Next();
-        m_generatedTableName = "Serilog_" + randomInt;
         var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
         var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
         m_accessToken = new AzureCliCredential().GetToken(tokenRequestContext).Token;
@@ -78,30 +76,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 Environment.GetEnvironmentVariable("databaseName"))
             .WithAadUserTokenAuthentication(m_accessToken);
         m_queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
-        using (var kustoAdminClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
-        {
-            var command = CslCommandGenerator.GenerateTableCreateCommand(m_generatedTableName,
-                new[]
-                {
-                    Tuple.Create("Timestamp", "System.DateTime"),
-                    Tuple.Create("Level", "System.String"),
-                    Tuple.Create("Message", "System.string"),
-                    Tuple.Create("Exception", "System.string"),
-                    Tuple.Create("Properties", "System.Object"),
-                    Tuple.Create("Position", "System.Object"),
-                    Tuple.Create("Elapsed", "System.Int32")
-                });
-            var alterBatchingPolicy = CslCommandGenerator.GenerateTableAlterIngestionBatchingPolicyCommand(
-                Environment.GetEnvironmentVariable("databaseName"), m_generatedTableName,
-                new IngestionBatchingPolicy(TimeSpan.FromSeconds(5), 10, 1024));
-            var enableStreamingIngestion =
-                CslCommandGenerator.GenerateTableAlterStreamingIngestionPolicyCommand(m_generatedTableName, true);
-            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command);
-            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
-                alterBatchingPolicy);
-            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
-                enableStreamingIngestion);
-        }
+        CreateKustoTable();
         m_columnMappings = new[]
         {
             new SinkColumnMapping
@@ -199,57 +174,45 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         var actualExceptionIngested = GetExceptionIngested();
         Assert.Contains("A nested exception!", actualExceptionIngested);
         Assert.Contains("Percentages must be between 0 and 100", actualExceptionIngested);
-    
-        await Test_AppSettingsConfiguration();
     }
-
-    private async Task Test_AppSettingsConfiguration()
+    internal static void CreateKustoTable()
     {
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile(path: "appsettings.json", optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables()
-            .Build();
-
-        var configurationUpdates = new Dictionary<string, string?>
+        var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
+        var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
+        var m_accessToken = new AzureCliCredential().GetToken(tokenRequestContext).Token;
+        var m_kustoConnectionStringBuilder = new KustoConnectionStringBuilder(
+                AzureDataExplorerSinkOptionsExtensions.GetClusterUrl(
+                    Environment.GetEnvironmentVariable("ingestionURI")),
+                Environment.GetEnvironmentVariable("databaseName"))
+            .WithAadUserTokenAuthentication(m_accessToken);
+        using (var kustoAdminClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
         {
-            { "Serilog:WriteTo:0:Args:ingestionUri", Environment.GetEnvironmentVariable("ingestionURI")},
-            { "Serilog:WriteTo:0:Args:databaseName", Environment.GetEnvironmentVariable("databaseName")},
-            { "Serilog:WriteTo:0:Args:userToken", m_accessToken },
-            { "Serilog:WriteTo:0:Args:tableName", m_generatedTableName },
-        };
-        
-        configuration = new ConfigurationBuilder()
-            .AddConfiguration(configuration)
-            .AddInMemoryCollection(configurationUpdates) 
-            .Build();
+            var command = CslCommandGenerator.GenerateTableCreateCommand(m_generatedTableName,
+                new[]
+                {
+                    Tuple.Create("Timestamp", "System.DateTime"),
+                    Tuple.Create("Level", "System.String"),
+                    Tuple.Create("Message", "System.string"),
+                    Tuple.Create("Exception", "System.string"),
+                    Tuple.Create("Properties", "System.Object"),
+                    Tuple.Create("Position", "System.Object"),
+                    Tuple.Create("Elapsed", "System.Int32")
+                });
 
-        var logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(configuration)
-            .WriteTo.Console()
-            .CreateLogger();
+            var alterBatchingPolicy = CslCommandGenerator.GenerateTableAlterIngestionBatchingPolicyCommand(
+                Environment.GetEnvironmentVariable("databaseName"), m_generatedTableName,
+                new IngestionBatchingPolicy(TimeSpan.FromSeconds(5), 10, 1024));
 
-        Assert.NotNull(logger);
+            var enableStreamingIngestion =
+                CslCommandGenerator.GenerateTableAlterStreamingIngestionPolicyCommand(m_generatedTableName, true);
 
-        Log.Logger = logger;
-
-        var position = new { Latitude = 25, Longitude = 134 };
-        var elapsedMs = 34;
-
-        Log.Verbose("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-        Log.Information("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-        Log.Warning("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-        Log.Error(new Exception(), "Error occurred while processing (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-        Log.Debug("Processed (AppSettingsJSON) {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-        
-        await Task.Delay(40000);
-
-        Log.CloseAndFlush();
-
-        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx("AppSettingsJSON");
-        Assert.Equal(5, noOfRecordsIngested);
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command);
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
+                alterBatchingPolicy);
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
+                enableStreamingIngestion);
+        }
     }
-
     private Logger GetSerilogAdxSink(string identifier)
     {
         Logger? logger = null;
@@ -391,8 +354,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         }
         return exception;
     }
-
-
     public void Dispose()
     {
         using (var queryProvider = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
