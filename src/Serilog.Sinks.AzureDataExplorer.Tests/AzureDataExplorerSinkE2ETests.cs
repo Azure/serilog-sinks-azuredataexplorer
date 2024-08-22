@@ -314,7 +314,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         return ex;
     }
 
-    private int GetNoOfRecordsIngestedInAdx(string searchString)
+    internal int GetNoOfRecordsIngestedInAdx(string searchString)
     {
         var noOfRecordsIngested = 0;
         string query = $"{m_generatedTableName} | where Message contains '{searchString}' | count ";
