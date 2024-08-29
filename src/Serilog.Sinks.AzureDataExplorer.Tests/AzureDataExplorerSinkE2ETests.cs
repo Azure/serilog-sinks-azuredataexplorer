@@ -201,7 +201,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
             var alterBatchingPolicy = CslCommandGenerator.GenerateTableAlterIngestionBatchingPolicyCommand(
                 Environment.GetEnvironmentVariable("databaseName"), m_generatedTableName,
-                new IngestionBatchingPolicy(TimeSpan.FromSeconds(5), 10, 1024));
+                new IngestionBatchingPolicy(TimeSpan.FromSeconds(10), 10, 1024));
 
             var enableStreamingIngestion =
                 CslCommandGenerator.GenerateTableAlterStreamingIngestionPolicyCommand(m_generatedTableName, true);
