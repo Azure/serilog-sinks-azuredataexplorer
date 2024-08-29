@@ -16,7 +16,6 @@ using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Sinks;
-using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.AzureDataExplorer.Extensions
 {
@@ -43,19 +42,18 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 throw new ArgumentNullException(nameof(options));
             }
 
-            var batchingOptions = new PeriodicBatchingSinkOptions
+            var batchingOptions = new BatchingOptions
             {
                 BatchSizeLimit = options.BatchPostingLimit,
-                Period = options.Period,
+                BufferingTimeLimit = options.Period,
                 EagerlyEmitFirstEvent = true,
                 QueueLimit = options.QueueSizeLimit
             };
 
             var azureDataExplorerSink = new AzureDataExplorerSink(options);
-            var batchingSink = new PeriodicBatchingSink(azureDataExplorerSink, batchingOptions);
 
-            var sink = string.IsNullOrWhiteSpace(options.BufferBaseFileName) ? (ILogEventSink)batchingSink : new AzureDataExplorerDurableSink(options);
-            return loggerConfiguration.Sink(sink,
+            var sink = string.IsNullOrWhiteSpace(options.BufferBaseFileName) ? azureDataExplorerSink : (IBatchedLogEventSink) new AzureDataExplorerDurableSink(options);
+            return loggerConfiguration.Sink(sink, batchingOptions,
                 restrictedToMinimumLevel,
                 options.BufferFileLoggingLevelSwitch);
         }
@@ -165,20 +163,19 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             }
 
 
-            var batchingOptions = new PeriodicBatchingSinkOptions
+            var batchingOptions = new BatchingOptions
             {
                 BatchSizeLimit = options.BatchPostingLimit,
-                Period = options.Period,
+                BufferingTimeLimit = options.Period,
                 EagerlyEmitFirstEvent = true,
                 QueueLimit = options.QueueSizeLimit
             };
 
 
             var azureDataExplorerSink = new AzureDataExplorerSink(options);
-            var batchingSink = new PeriodicBatchingSink(azureDataExplorerSink, batchingOptions);
 
-            var sink = string.IsNullOrWhiteSpace(bufferBaseFileName) ? (ILogEventSink)batchingSink : new AzureDataExplorerDurableSink(options);
-            return loggerConfiguration.Sink(sink,
+            var sink = string.IsNullOrWhiteSpace(bufferBaseFileName) ? azureDataExplorerSink : (IBatchedLogEventSink) new AzureDataExplorerDurableSink(options);
+            return loggerConfiguration.Sink(sink, batchingOptions,
                 restrictedToMinimumLevel,
                 options.BufferFileLoggingLevelSwitch);
         }
