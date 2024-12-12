@@ -18,8 +18,11 @@ using Kusto.Cloud.Platform.Security;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
+using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
+using Serilog;
+using System.IO;
 
 namespace Serilog.Sinks.AzureDataExplorer;
 
@@ -50,7 +53,7 @@ namespace Serilog.Sinks.AzureDataExplorer;
 public class AzureDataExplorerSinkE2ETests : IDisposable
 {
     private string? m_bufferBaseFileName;
-    private readonly string? m_generatedTableName;
+    internal static readonly string? m_generatedTableName = "Serilog_" + new Random().Next();
     private readonly KustoConnectionStringBuilder? m_kustoConnectionStringBuilder;
     private readonly IEnumerable<SinkColumnMapping> m_columnMappings;
     private readonly ICslQueryProvider m_queryProvider;
@@ -64,8 +67,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         Assert.NotNull(Environment.GetEnvironmentVariable("appId"));
         Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
         m_bufferBaseFileName = "";
-        var randomInt = new Random().Next();
-        m_generatedTableName = "Serilog_" + randomInt;
         var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
         var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
         m_accessToken = new AzureCliCredential().GetToken(tokenRequestContext).Token;
@@ -75,30 +76,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
                 Environment.GetEnvironmentVariable("databaseName"))
             .WithAadUserTokenAuthentication(m_accessToken);
         m_queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
-        using (var kustoAdminClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
-        {
-            var command = CslCommandGenerator.GenerateTableCreateCommand(m_generatedTableName,
-                new[]
-                {
-                    Tuple.Create("Timestamp", "System.DateTime"),
-                    Tuple.Create("Level", "System.String"),
-                    Tuple.Create("Message", "System.string"),
-                    Tuple.Create("Exception", "System.string"),
-                    Tuple.Create("Properties", "System.Object"),
-                    Tuple.Create("Position", "System.Object"),
-                    Tuple.Create("Elapsed", "System.Int32")
-                });
-            var alterBatchingPolicy = CslCommandGenerator.GenerateTableAlterIngestionBatchingPolicyCommand(
-                Environment.GetEnvironmentVariable("databaseName"), m_generatedTableName,
-                new IngestionBatchingPolicy(TimeSpan.FromSeconds(5), 10, 1024));
-            var enableStreamingIngestion =
-                CslCommandGenerator.GenerateTableAlterStreamingIngestionPolicyCommand(m_generatedTableName, true);
-            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command);
-            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
-                alterBatchingPolicy);
-            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
-                enableStreamingIngestion);
-        }
+        CreateKustoTable();
         m_columnMappings = new[]
         {
             new SinkColumnMapping
@@ -197,7 +175,44 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         Assert.Contains("A nested exception!", actualExceptionIngested);
         Assert.Contains("Percentages must be between 0 and 100", actualExceptionIngested);
     }
+    internal static void CreateKustoTable()
+    {
+        var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
+        var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
+        var m_accessToken = new AzureCliCredential().GetToken(tokenRequestContext).Token;
+        var m_kustoConnectionStringBuilder = new KustoConnectionStringBuilder(
+                AzureDataExplorerSinkOptionsExtensions.GetClusterUrl(
+                    Environment.GetEnvironmentVariable("ingestionURI")),
+                Environment.GetEnvironmentVariable("databaseName"))
+            .WithAadUserTokenAuthentication(m_accessToken);
+        using (var kustoAdminClient = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
+        {
+            var command = CslCommandGenerator.GenerateTableCreateCommand(m_generatedTableName,
+                new[]
+                {
+                    Tuple.Create("Timestamp", "System.DateTime"),
+                    Tuple.Create("Level", "System.String"),
+                    Tuple.Create("Message", "System.string"),
+                    Tuple.Create("Exception", "System.string"),
+                    Tuple.Create("Properties", "System.Object"),
+                    Tuple.Create("Position", "System.Object"),
+                    Tuple.Create("Elapsed", "System.Int32")
+                });
 
+            var alterBatchingPolicy = CslCommandGenerator.GenerateTableAlterIngestionBatchingPolicyCommand(
+                Environment.GetEnvironmentVariable("databaseName"), m_generatedTableName,
+                new IngestionBatchingPolicy(TimeSpan.FromSeconds(10), 10, 1024));
+
+            var enableStreamingIngestion =
+                CslCommandGenerator.GenerateTableAlterStreamingIngestionPolicyCommand(m_generatedTableName, true);
+
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"), command);
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
+                alterBatchingPolicy);
+            kustoAdminClient.ExecuteControlCommand(Environment.GetEnvironmentVariable("databaseName"),
+                enableStreamingIngestion);
+        }
+    }
     private Logger GetSerilogAdxSink(string identifier)
     {
         Logger? logger = null;
@@ -299,7 +314,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         return ex;
     }
 
-    private int GetNoOfRecordsIngestedInAdx(string searchString)
+    internal int GetNoOfRecordsIngestedInAdx(string searchString)
     {
         var noOfRecordsIngested = 0;
         string query = $"{m_generatedTableName} | where Message contains '{searchString}' | count ";
@@ -339,8 +354,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         }
         return exception;
     }
-
-
     public void Dispose()
     {
         using (var queryProvider = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
