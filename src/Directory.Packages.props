@@ -9,10 +9,6 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
-<<<<<<< HEAD
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Xml" Version="9.0.3" />
-=======
->>>>>>> c7e8387 (Update packages with latest version)
     <PackageVersion Include="Serilog" Version="4.2.0" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
