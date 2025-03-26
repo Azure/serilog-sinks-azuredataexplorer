@@ -21,7 +21,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
     {
         private const string AppName = "Serilog.Sinks.AzureDataExplorer";
 
-        private const string ClientVersion = "1.1.3";
+        private const string ClientVersion = "1.1.4";
 
         public static KustoConnectionStringBuilder GetKustoConnectionStringBuilder(
             this AzureDataExplorerSinkOptions options)
