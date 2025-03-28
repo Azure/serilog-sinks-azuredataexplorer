@@ -83,6 +83,39 @@ You can configure the Azure Data Explorer Serilog Sink using an appsettings.json
   }
 }
 ```
+
+## Configuration of Azure Data Explorer Serilog sink through appsettings.xml
+
+You can also configure the Azure Data Explorer Serilog Sink using an `appsettings.xml` file. 
+
+**Sample appsettings.xml contents**
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <Serilog>
+    <Using>Serilog.Sinks.File</Using>
+    <Using>Serilog.Sinks.AzureDataExplorer</Using>
+    <MinimumLevel Default="Verbose" />
+    <WriteTo>
+      <Args>
+        <Name>AzureDataExplorerSink</Name>
+        <Args>
+          <ingestionUri>https://ingest-cluster-name</ingestionUri>
+          <databaseName>DatabaseName</databaseName>
+          <tableName>TableName</tableName>
+          <applicationClientId>YOUR_CLIENT_ID</applicationClientId> 
+          <applicationSecret>YOUR_APP_SECRET</applicationSecret> 
+          <tenantId>YOUR_TENANT_ID</tenantId> 
+          <batchPostingLimit>1000</batchPostingLimit> <!-- Optional -->
+          <period>10</period> <!-- Optional (in seconds) -->
+          <queueSizeLimit>100000</queueSizeLimit> <!-- Optional -->
+        </Args>
+      </Args>
+    </WriteTo>
+  </Serilog>
+</configuration>
+```
+
 **Parameters for Periodic Batching:**
 
 ***batchPostingLimit:*** Specifies the maximum number of events to include in a batch. Defaults to 1000.
