@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <Serilog>
+    <Using>Serilog.Sinks.File</Using>
+    <Using>Serilog.Sinks.AzureDataExplorer</Using>
+
+    <MinimumLevel Default="Verbose" />
+    <WriteTo>
+      <Args>
+        <Name>AzureDataExplorerSink</Name>
+        <Args>
+        <ingestionUri>%ingestionUri%</ingestionUri>
+        <databaseName>%databaseName%</databaseName>
+        <tableName>na</tableName>
+        <batchPostingLimit>10</batchPostingLimit>
+        <period>2</period>
+        <queueSizeLimit>1000</queueSizeLimit>
+        <applicationClientId>na</applicationClientId>
+        <applicationSecret>na</applicationSecret>
+        <tenantId>na</tenantId>
+        </Args>
+      </Args>
+    </WriteTo>
+  </Serilog>
+</configuration>
