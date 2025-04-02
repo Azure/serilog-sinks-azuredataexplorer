@@ -5,13 +5,13 @@
   <ItemGroup>
     <!--    add your PackageVersion nodes here -->
     <PackageVersion Include="Microsoft.Azure.Kusto.Ingest" Version="13.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Xml" Version="9.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Xml" Version="8.0.0" />
     <PackageVersion Include="Serilog" Version="4.2.0" />
-    <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="8.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact.Reader" Version="4.0.0" />
     <PackageVersion Include="Serilog.Settings.Configuration" Version="8.0.4" />
