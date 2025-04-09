@@ -60,7 +60,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 // Durable mode: Use AzureDataExplorerDurableSink 
                 var durableSink = new AzureDataExplorerDurableSink(options);
-                return loggerConfiguration.Sink(new DurableSinkWrapper(durableSink), restrictedToMinimumLevel);
+                return loggerConfiguration.Sink(durableSink, restrictedToMinimumLevel);
             }
         }
 
