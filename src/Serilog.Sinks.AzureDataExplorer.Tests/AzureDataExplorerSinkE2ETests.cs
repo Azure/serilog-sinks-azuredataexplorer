@@ -122,18 +122,10 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
         var distinctId = identifier + randomInt;
         if (String.Equals(runMode, "durable"))
         {
-                    // Reset the test folder
-            if (Directory.Exists(testFolder))
+            m_bufferBaseFileName = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId + Path.DirectorySeparatorChar + "logger-buffer";
+            if (!Directory.Exists(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId))
             {
-                Directory.Delete(testFolder, true);
-            }
-            Directory.CreateDirectory(testFolder);
-
-            m_bufferBaseFileName = Path.Combine(testFolder, distinctId, "logger-buffer");
-            var bufferDirectory = Path.GetDirectoryName(m_bufferBaseFileName);
-            if (bufferDirectory != null && !Directory.Exists(bufferDirectory))
-            {
-                Directory.CreateDirectory(bufferDirectory);
+                Directory.CreateDirectory(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId);
             }
         }
         Logger log = GetSerilogAdxSink(identifier);
