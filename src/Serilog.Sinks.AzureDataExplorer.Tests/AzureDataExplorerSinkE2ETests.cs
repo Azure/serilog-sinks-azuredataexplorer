@@ -338,7 +338,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     {
         var exception = "";
         using var queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
-        string query = $"{m_generatedTableName} | where Level == 'Error' | project Exception";
+        string query = $"{m_generatedTableName} | where Level == 'Error' and Message contains 'Test_AzureDataExplorer_Serilog' | project Exception";
         var clientRequestProperties = new ClientRequestProperties()
         {
             ClientRequestId = Guid.NewGuid().ToString()
