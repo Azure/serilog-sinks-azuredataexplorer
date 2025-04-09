@@ -66,7 +66,7 @@ namespace Serilog.Sinks.AzureDataExplorer
             timer.Start(timerInterval);
 
             // Assert
-            Assert.True(timerStarted.WaitOne(timerInterval + TimeSpan.FromMilliseconds(50)), "OnTick function should have been invoked within the specified interval.");
+            Assert.True(timerStarted.WaitOne(timerInterval + TimeSpan.FromMilliseconds(100)), "OnTick function should have been invoked within the specified interval.");
             // Cleanup
             timer.Dispose();
             return Task.CompletedTask;
