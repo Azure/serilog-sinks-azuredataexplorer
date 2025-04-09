@@ -118,7 +118,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     public async Task Test_AzureDataExplorer_SerilogSink(string identifier, string runMode, int result)
     {
         var randomInt = new Random().Next().ToString();
-        var testFolder = Path.Combine(Directory.GetCurrentDirectory(), "TestLogs");
         var distinctId = identifier + randomInt;
         if (String.Equals(runMode, "durable"))
         {
@@ -150,11 +149,11 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(100000);
+        await Task.Delay(30000);
         if (String.Equals(runMode, "durable"))
         {
             int lineCount = 0;
-            foreach (string file in Directory.EnumerateFiles(Path.Combine(testFolder, distinctId), "*.clef"))
+            foreach (string file in Directory.EnumerateFiles(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + distinctId, "*.clef"))
             {
                 Stream stream = System.IO.File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 StreamReader streamReader = new StreamReader(stream);
