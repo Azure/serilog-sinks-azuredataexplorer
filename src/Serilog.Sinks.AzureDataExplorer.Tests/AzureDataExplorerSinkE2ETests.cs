@@ -112,9 +112,9 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
 
     [Theory]
     [InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_Durable", "durable", 10)]
-    //[InlineData("Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable", "durable", 2)]
+    [InlineData("Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable", "durable", 2)]
     [InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_NonDurable", "non-durable", 10)]
-    //[InlineData("Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable", "non-durable", 10)]
+    [InlineData("Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable", "non-durable", 10)]
     public async Task Test_AzureDataExplorer_SerilogSink(string identifier, string runMode, int result)
     {
         var randomInt = new Random().Next().ToString();

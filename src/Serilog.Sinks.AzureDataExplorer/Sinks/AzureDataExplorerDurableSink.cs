@@ -162,10 +162,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
         {
             // This is a lagging indicator, but the network bandwidth usage benefits
             // are worth the ambiguity.
-            lock (m_sink)
+            if (m_shipper.IsIncluded(logEvent))
+            {
+                lock (m_sink)
                 {
                     m_sink.Write(logEvent);
                 }
+            }
         }
 
         #region IDisposable methods
