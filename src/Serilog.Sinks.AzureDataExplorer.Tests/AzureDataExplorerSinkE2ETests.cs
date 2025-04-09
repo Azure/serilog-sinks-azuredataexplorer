@@ -158,7 +158,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(40000);
+        await Task.Delay(100000);
         if (String.Equals(runMode, "durable"))
         {
             int lineCount = 0;
@@ -365,30 +365,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     }
     public void Dispose()
     {
-        // Dispose of the logger to ensure no further writes to the buffer files
-        Log.CloseAndFlush();
-
-        // Wait for the LogShipper to finish processing
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-
-        // Clean up buffer files
-        if (!string.IsNullOrEmpty(m_bufferBaseFileName))
-        {
-            var bufferDirectory = Path.GetDirectoryName(m_bufferBaseFileName);
-            if (Directory.Exists(bufferDirectory))
-            {
-                try
-                {
-                    Directory.Delete(bufferDirectory, true);
-                }
-                catch (IOException ex)
-                {
-                    Console.WriteLine($"Failed to delete buffer directory: {ex.Message}");
-                }
-            }
-        }
-        // Drop the test table in ADX
         using (var queryProvider = KustoClientFactory.CreateCslAdminProvider(m_kustoConnectionStringBuilder))
         {
             var command = CslCommandGenerator.GenerateTableDropCommand(m_generatedTableName);
