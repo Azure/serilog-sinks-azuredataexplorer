@@ -164,10 +164,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Sinks
             // are worth the ambiguity.
             if (m_shipper.IsIncluded(logEvent))
             {
-                lock (m_sink)
-                {
-                    m_sink.Write(logEvent);
-                }
+                m_sink.Write(logEvent);
             }
         }
 
