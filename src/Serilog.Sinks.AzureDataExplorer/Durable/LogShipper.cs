@@ -164,24 +164,30 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                             position = new FileSetPosition(0, files.FirstOrDefault(f => IOFile.Exists(f)));
                         }
 
+                        TPayload payload;
                         if (position.File == null)
                         {
-                            break; // No files to process
+                            payload = m_payloadReader.GetNoPayload();
+                            count = 0;
+                        }
+                        else
+                        {
+                            payload = m_payloadReader.ReadPayload(m_batchPostingLimit, m_eventBodyLimitBytes, ref position, ref count, position.File);
                         }
 
-                        TPayload payload = m_payloadReader.ReadPayload(m_batchPostingLimit, m_eventBodyLimitBytes, ref position, ref count, position.File);
+                        var stopWatch = Stopwatch.StartNew();
+                        var fileIdentifier = Guid.NewGuid();
 
-                        if (count > 0)
+                        if (count > 0 || (m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow))
                         {
-                            var stopWatch = Stopwatch.StartNew();
-                            var fileIdentifier = Guid.NewGuid();
-
                             for (int retry = 1; retry <= m_options.IngestionRetries; ++retry)
                             {
+                                IKustoIngestionResult result;
+                                m_nextRequiredLevelCheckUtc = DateTime.UtcNow.Add(RequiredLevelCheckInterval);
+                                using var dataStream = CreateStreamFromLogEvents(payload);
                                 try
                                 {
-                                    using var dataStream = CreateStreamFromLogEvents(payload);
-                                    var result = await m_ingestClient.IngestFromStreamAsync(
+                                    result = await m_ingestClient.IngestFromStreamAsync(
                                             dataStream,
                                             new KustoQueuedIngestionProperties(m_databaseName, m_tableName)
                                             {
@@ -200,10 +206,24 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                                 SourceId = fileIdentifier
                                             }).ConfigureAwait(false);
                                     var ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
-
-                                    // Wait for ingestion to complete or timeout
-                                    while (ingestionStatus.Status == Status.Pending && stopWatch.Elapsed < Timeout)
+                                    while (true) //loop until the record is updated or we timeout
                                     {
+                                        // check if the record is updated
+                                        if (ingestionStatus.Status != Status.Pending)
+                                        {
+                                            break; // the record is updated, so we can exit the loop!
+                                        }
+
+                                        // check if we have exceeded our timeout
+                                        if (stopWatch.Elapsed > Timeout)
+                                        {
+                                            break; // break loop if we timed out
+                                        }
+
+                                        // the record isn't updated & we haven't timed out, so the 
+                                        // loop will repeat. we're worried about querying the DB 
+                                        // too often, so we add a delay. this will work a lot like 
+                                        // a timer, but it is async and avoids reentrancy issues.
                                         await Task.Delay(TimeBetweenChecks);
                                         ingestionStatus = result.GetIngestionStatusBySourceId(fileIdentifier);
                                     }
@@ -220,6 +240,36 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                         if (m_bufferSizeLimitBytes.HasValue)
                                             m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
                                     }
+
+                                }
+                                catch (KustoClientApplicationAuthenticationException ex)
+                                {
+                                    if (m_options.FailOnError)
+                                    {
+                                        SelfLog.WriteLine("Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials", ex);
+                                        SelfLog.WriteLine("FailOnError is set to true, the exception will be thrown to the caller to handle the failure");
+                                        throw new LoggingFailedException($"Auth failure on  Kusto sink due to authentication error (EmitBatchAsync). Please check your credentials.{ex.Message}");
+                                    }
+                                    SelfLog.WriteLine(" sink due to authentication error (EmitBatchAsync). Please check your credentials.", ex);
+
+                                }
+                                catch (IngestClientException ex)
+                                {
+                                    if (ex.IsPermanent)
+                                    { // <- no retry
+                                        if (m_options.FailOnError)
+                                        {
+                                            SelfLog.WriteLine("Permanent ingestion failure ingesting to Kusto.FailOnError is set to true, the exception will be thrown to the caller to handle the failure", ex);
+                                            throw new LoggingFailedException($"Permanent ingestion failure ingesting to Kusto.{ex.Message}");
+                                        }
+                                        // Since the failure is permanent, we can't retry, so we'll just log the error and continue.
+                                        SelfLog.WriteLine("Permanent ingestion failure ingesting to Kusto.Since FailOnError is not set, the batch will be dropped", ex);
+                                        break; // no more retries on unwanted exception
+                                    }
+                                    else
+                                    {
+                                        SelfLog.WriteLine($"Temporary failures writing to Kusto (Retry attempt {retry} of {m_options.IngestionRetries})", ex);
+                                    }
                                 }
                                 catch (Exception ex) when (retry < m_options.IngestionRetries)
                                 {
@@ -227,15 +277,24 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                 }
                             }
                         }
+                        else if (position.File == null)
+                        {
+                            break;
+                        }
                         else
                         {
-                            // No events to process; advance the bookmark if the file is complete
-                            if (files.Length > 1 && files.First() == position.File && FileIsUnlockedAndUnextended(position))
+                            // For whatever reason, there's nothing waiting to send. This means we should try connecting again at the
+                            // regular interval, so mark the attempt as successful.
+                            m_connectionSchedule.MarkSuccess();
+
+                            // Only advance the bookmark if no other process has the
+                            // current file locked, and its length is as we found it.
+                            if (files.Length == 2 && files.First() == position.File &&
+                                FileIsUnlockedAndUnextended(position))
                             {
                                 bookmarkFile.WriteBookmark(new FileSetPosition(0, files[1]));
                             }
 
-                            // Clean up old files
                             if (files.Length > 2)
                             {
                                 // By this point, we expect writers to have relinquished locks
@@ -249,7 +308,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             catch (Exception ex)
             {
                 m_connectionSchedule.MarkFailure();
-                SelfLog.WriteLine($"Exception while emitting periodic batch: {ex}");
+                SelfLog.WriteLine("Exception while emitting periodic batch from {0}: {1}", this, ex);
 
                 if (m_bufferSizeLimitBytes.HasValue)
                     m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
@@ -275,15 +334,16 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             }
             catch (IOException)
             {
-                // File is locked
+                // Where no HRESULT is available, assume IOExceptions indicate a locked file
                 return false;
             }
             catch (Exception ex)
             {
-                SelfLog.WriteLine($"Unexpected exception while testing locked status of {position.File}: {ex}");
+                SelfLog.WriteLine("Unexpected exception while testing locked status of {0}: {1}", position.File, ex);
                 return false;
             }
         }
+
         private Stream CreateStreamFromLogEvents(TPayload batch)
         {
             List<LogEvent> payloadBatch = (List<LogEvent>)Convert.ChangeType(batch, typeof(List<LogEvent>));
