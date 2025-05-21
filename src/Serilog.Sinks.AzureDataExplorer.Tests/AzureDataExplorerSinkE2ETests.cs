@@ -93,7 +93,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             },
             new SinkColumnMapping
             {
-                ColumnName = "Exception", ColumnType = "string", ValuePath = "$.Exception"
+                ColumnName = "Exception", ColumnType = "string", ValuePath = "$.ExceptionEx"
             },
             new SinkColumnMapping
             {
@@ -111,10 +111,10 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     }
 
     [Theory]
-    //[InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_Durable", "durable", 10)]
-    //[InlineData("Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable", "durable", 2)]
+    [InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_Durable", "durable", 10)]
+    [InlineData("Test_AzureDataExplorer_Serilog_Sink_LogLevelSwitch_Durable", "durable", 2)]
     [InlineData("Test_AzureDataExplorer_Serilog_Sink_Queued_Ingestion_NonDurable", "non-durable", 10)]
-    //[InlineData("Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable", "non-durable", 10)]
+    [InlineData("Test_AzureDataExplorer_Serilog_Sink_With_Streaming_NonDurable", "non-durable", 10)]
     public async Task Test_AzureDataExplorer_SerilogSink(string identifier, string runMode, int result)
     {
         var randomInt = new Random().Next().ToString();
@@ -149,7 +149,21 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(20000);
+        var timeout = TimeSpan.FromSeconds(30);
+        var pollingInterval = TimeSpan.FromMilliseconds(500);
+        var startTime = DateTime.UtcNow;
+        int noOfRecordsIngested = 0;
+        while (DateTime.UtcNow - startTime < timeout)
+        {
+            noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifier);
+            if (noOfRecordsIngested >= result)
+                break;
+            await Task.Delay(pollingInterval);
+        }
+        if (noOfRecordsIngested < result)
+        {
+            throw new TimeoutException("The required number of records were not ingested within the timeout period.");
+        }
         if (String.Equals(runMode, "durable"))
         {
             int lineCount = 0;
@@ -169,7 +183,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             }
             Assert.Equal(result, lineCount);
         }
-        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifier);
         Assert.Equal(result, noOfRecordsIngested);
         var actualExceptionIngested = GetExceptionIngested();
         Assert.Contains("A nested exception!", actualExceptionIngested);
@@ -338,7 +351,7 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     {
         var exception = "";
         using var queryProvider = KustoClientFactory.CreateCslQueryProvider(m_kustoConnectionStringBuilder);
-        string query = $"{m_generatedTableName} | where Level == 'Error' | project Exception";
+        string query = $"{m_generatedTableName} | where Level == 'Error' and Message contains 'Test_AzureDataExplorer_Serilog' | project Exception";
         var clientRequestProperties = new ClientRequestProperties()
         {
             ClientRequestId = Guid.NewGuid().ToString()

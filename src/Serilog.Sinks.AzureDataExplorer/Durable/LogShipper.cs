@@ -158,11 +158,20 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                         var position = bookmarkFile.TryReadBookmark();
                         var files = m_fileSet.GetBufferFiles();
 
+                        // Skip missing files instead of resetting to the first file
                         if (position.File == null || !IOFile.Exists(position.File))
                         {
-                            position = new FileSetPosition(0, files.FirstOrDefault());
+                            var nextFile = files.FirstOrDefault(f => IOFile.Exists(f));
+                            if (nextFile == null)
+                            {
+                                // No valid files found
+                                position = new FileSetPosition(0, null);
+                            }
+                            else
+                            {
+                                position = new FileSetPosition(0, nextFile);
+                            }
                         }
-
                         TPayload payload;
                         if (position.File == null)
                         {
@@ -177,7 +186,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                         var stopWatch = Stopwatch.StartNew();
                         var fileIdentifier = Guid.NewGuid();
 
-                        if (count > 0 || m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow)
+                        if (count > 0 || (m_controlledSwitch.IsActive && m_nextRequiredLevelCheckUtc < DateTime.UtcNow))
                         {
                             for (int retry = 1; retry <= m_options.IngestionRetries; ++retry)
                             {
@@ -230,15 +239,14 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                     if (ingestionStatus.Status == Status.Succeeded)
                                     {
                                         m_connectionSchedule.MarkSuccess();
-                                        bookmarkFile.WriteBookmark(position);
+                                        bookmarkFile.WriteBookmark(position); // Update bookmark only after successful ingestion
+                                        break; // Exit retry loop on success
                                     }
                                     else
                                     {
                                         m_connectionSchedule.MarkFailure();
                                         if (m_bufferSizeLimitBytes.HasValue)
                                             m_fileSet.CleanUpBufferFiles(m_bufferSizeLimitBytes.Value, 2);
-
-                                        break;
                                     }
 
                                 }
@@ -270,6 +278,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                                     {
                                         SelfLog.WriteLine($"Temporary failures writing to Kusto (Retry attempt {retry} of {m_options.IngestionRetries})", ex);
                                     }
+                                }
+                                catch (Exception ex) when (retry < m_options.IngestionRetries)
+                                {
+                                    SelfLog.WriteLine($"Retry {retry} failed: {ex.Message}");
                                 }
                             }
                         }
@@ -319,25 +331,30 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
             }
         }
 
-        static bool FileIsUnlockedAndUnextended(FileSetPosition position)
+        private static bool FileIsUnlockedAndUnextended(FileSetPosition position)
         {
             try
             {
-                using (var fileStream = IOFile.Open(position.File, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read))
+                using (var fileStream = IOFile.Open(position.File, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     return fileStream.Length <= position.NextLineStart;
                 }
             }
+            catch (FileNotFoundException)
+            {
+                // File is missing, treat as not unlocked/unextended
+                return false;
+            }
             catch (IOException)
             {
-                // Where no HRESULT is available, assume IOExceptions indicate a locked file
+                // File is locked
+                return false;
             }
             catch (Exception ex)
             {
                 SelfLog.WriteLine("Unexpected exception while testing locked status of {0}: {1}", position.File, ex);
+                return false;
             }
-
-            return false;
         }
 
         private Stream CreateStreamFromLogEvents(TPayload batch)
