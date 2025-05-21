@@ -149,7 +149,21 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        await Task.Delay(30000);
+        var timeout = TimeSpan.FromSeconds(30);
+        var pollingInterval = TimeSpan.FromMilliseconds(500);
+        var startTime = DateTime.UtcNow;
+        int noOfRecordsIngested = 0;
+        while (DateTime.UtcNow - startTime < timeout)
+        {
+            noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifier);
+            if (noOfRecordsIngested >= result)
+                break;
+            await Task.Delay(pollingInterval);
+        }
+        if (noOfRecordsIngested < result)
+        {
+            throw new TimeoutException("The required number of records were not ingested within the timeout period.");
+        }
         if (String.Equals(runMode, "durable"))
         {
             int lineCount = 0;
@@ -169,7 +183,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             }
             Assert.Equal(result, lineCount);
         }
-        int noOfRecordsIngested = GetNoOfRecordsIngestedInAdx(identifier);
         Assert.Equal(result, noOfRecordsIngested);
         var actualExceptionIngested = GetExceptionIngested();
         Assert.Contains("A nested exception!", actualExceptionIngested);

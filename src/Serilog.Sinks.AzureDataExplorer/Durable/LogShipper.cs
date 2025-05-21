@@ -161,9 +161,17 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                         // Skip missing files instead of resetting to the first file
                         if (position.File == null || !IOFile.Exists(position.File))
                         {
-                            position = new FileSetPosition(0, files.FirstOrDefault(f => IOFile.Exists(f)));
+                            var nextFile = files.FirstOrDefault(f => IOFile.Exists(f));
+                            if (nextFile == null)
+                            {
+                                // No valid files found
+                                position = new FileSetPosition(0, null);
+                            }
+                            else
+                            {
+                                position = new FileSetPosition(0, nextFile);
+                            }
                         }
-
                         TPayload payload;
                         if (position.File == null)
                         {
