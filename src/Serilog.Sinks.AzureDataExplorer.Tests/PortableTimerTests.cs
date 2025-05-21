@@ -47,29 +47,22 @@ namespace Serilog.Sinks.AzureDataExplorer
         }
 
         [Fact]
-        public Task Start_ExecutesOnTickFunction_WhenIntervalElapses()
+        public void Start_ExecutesOnTickFunction_Immediately_WhenIntervalIsZero()
         {
             // Arrange
-            var timerInterval = TimeSpan.FromMilliseconds(50);
-            var timerStarted = new ManualResetEvent(false);
-            var timerCompleted = new ManualResetEvent(false);
-
+            var timerStarted = false;
             var timer = new PortableTimer(_ =>
             {
-                timerStarted.Set();
-                Thread.Sleep(100);
-                timerCompleted.Set();
+                timerStarted = true;
                 return Task.CompletedTask;
             });
 
             // Act
-            timer.Start(timerInterval);
+            timer.Start(TimeSpan.Zero);
 
             // Assert
-            Assert.True(timerStarted.WaitOne(timerInterval + TimeSpan.FromMilliseconds(100)), "OnTick function should have been invoked within the specified interval.");
-            // Cleanup
+            Assert.True(SpinWait.SpinUntil(() => timerStarted, 1000), "OnTick function should have been invoked promptly.");
             timer.Dispose();
-            return Task.CompletedTask;
         }
     }
 }

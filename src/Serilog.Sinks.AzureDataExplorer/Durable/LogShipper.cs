@@ -332,9 +332,14 @@ namespace Serilog.Sinks.AzureDataExplorer.Durable
                     return fileStream.Length <= position.NextLineStart;
                 }
             }
+            catch (FileNotFoundException)
+            {
+                // File is missing, treat as not unlocked/unextended
+                return false;
+            }
             catch (IOException)
             {
-                // Where no HRESULT is available, assume IOExceptions indicate a locked file
+                // File is locked
                 return false;
             }
             catch (Exception ex)
