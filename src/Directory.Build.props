@@ -1,6 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <RootNamespace>Serilog.Sinks.AzureDataExplorer</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPublishable>True</IsPublishable>
@@ -22,6 +22,7 @@
     <RepositoryUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</RepositoryUrl>
     <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
     <PackageReleaseNotes>
+      Added .NET 8.0 support with multi-targeting
       Added GZip compression when sending data
       Improved options default values
       Added durability to the Azure Data Explorer Sink
@@ -31,8 +32,8 @@
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
-    <Version>1.1.5</Version>
-    <AssemblyVersion>1.1.5.0</AssemblyVersion>
-    <FileVersion>1.1.5.0</FileVersion>
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
   </PropertyGroup>
 </Project>
