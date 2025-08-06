@@ -64,8 +64,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     {
         Assert.NotNull(Environment.GetEnvironmentVariable("ingestionURI"));
         Assert.NotNull(Environment.GetEnvironmentVariable("databaseName"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("appId"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
         m_bufferBaseFileName = "";
         var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
         var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
