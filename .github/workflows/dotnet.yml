@@ -40,11 +40,11 @@ jobs:
       
     - name: Restore dependencies for .NET 6.0
       if: matrix.dotnet-version == '6.0.x'
-      run: dotnet restore src -f net6.0
+      run: dotnet restore src /p:TargetFramework=net6.0
       
     - name: Restore dependencies for .NET 8.0
       if: matrix.dotnet-version == '8.0.x'
-      run: dotnet restore src -f net8.0
+      run: dotnet restore src /p:TargetFramework=net8.0
       
     - name: Restore dependencies for .NET 9.0
       if: matrix.dotnet-version == '9.0.x'
@@ -52,11 +52,11 @@ jobs:
       
     - name: Build with .NET 6.0
       if: matrix.dotnet-version == '6.0.x'
-      run: dotnet build src --no-restore --configuration Release -f net6.0
+      run: dotnet build src --no-restore --configuration Release /p:TargetFramework=net6.0
       
     - name: Build with .NET 8.0
       if: matrix.dotnet-version == '8.0.x'
-      run: dotnet build src --no-restore --configuration Release -f net8.0
+      run: dotnet build src --no-restore --configuration Release /p:TargetFramework=net8.0
       
     - name: Build with .NET 9.0
       if: matrix.dotnet-version == '9.0.x'
@@ -69,7 +69,7 @@ jobs:
         databaseName : ${{secrets.DATABASE_NAME}}
         appId : ${{secrets.APP_ID}}
         tenant : ${{secrets.TENANT}}
-      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release -f net6.0 --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release /p:TargetFramework=net6.0 --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
       
     - name: Test with .NET 8.0
       if: matrix.dotnet-version == '8.0.x'
@@ -78,7 +78,7 @@ jobs:
         databaseName : ${{secrets.DATABASE_NAME}}
         appId : ${{secrets.APP_ID}}
         tenant : ${{secrets.TENANT}}
-      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release -f net8.0 --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release /p:TargetFramework=net8.0 --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
       
     - name: Test with .NET 9.0
       if: matrix.dotnet-version == '9.0.x'
@@ -87,7 +87,7 @@ jobs:
         databaseName : ${{secrets.DATABASE_NAME}}
         appId : ${{secrets.APP_ID}}
         tenant : ${{secrets.TENANT}}
-      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release /p:TargetFramework=net9.0 --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
