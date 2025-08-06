@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Globalization;
 using Serilog.Events;
 using Serilog.Formatting.Compact.Reader;
 using Serilog.Sinks.AzureDataExplorer.Extensions;

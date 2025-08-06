@@ -7,35 +7,60 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     environment: build
     permissions:
       checks: write
       pull-requests: write
       id-token: write
-      contents: read  
-
+      contents: read
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dotnet-version: '6.0.x'
+            framework: 'net6.0'
+          - dotnet-version: '8.0.x'
+            framework: 'net8.0' 
+          - dotnet-version: '9.0.x'
+            framework: 'net9.0'
+        
     steps:
     - name: Azure login
       uses: azure/login@v2
       with:
         client-id: ${{ secrets.APP_ID }}
         tenant-id: ${{ secrets.TENANT }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}      
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET ${{ matrix.dotnet-version }}
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: ${{ matrix.dotnet-version }}
+        
+    - name: Display .NET version
+      run: dotnet --version
+      
     - name: Restore dependencies
-      run: dotnet restore src
+      run: dotnet restore src /p:TargetFrameworks=${{ matrix.framework }} /p:SuppressTfmSupportBuildWarnings=true
+      
     - name: Build
-      run: dotnet build src --no-restore
+      run: dotnet build src --no-restore --configuration Release /p:TargetFrameworks=${{ matrix.framework }} /p:SuppressTfmSupportBuildWarnings=true
+      
     - name: Test
       env:
         ingestionURI : ${{secrets.INGESTION_URI}}
         databaseName : ${{secrets.DATABASE_NAME}}
         appId : ${{secrets.APP_ID}}
         tenant : ${{secrets.TENANT}}
-      run: dotnet test src --no-build --verbosity normal
+      run: dotnet test src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --configuration Release /p:TargetFrameworks=${{ matrix.framework }} /p:SuppressTfmSupportBuildWarnings=true --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ matrix.dotnet-version }}
+        path: ./TestResults/**/coverage.cobertura.xml

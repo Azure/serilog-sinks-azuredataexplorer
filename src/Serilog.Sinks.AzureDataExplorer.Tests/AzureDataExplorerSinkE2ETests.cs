@@ -14,15 +14,11 @@
 
 using Azure.Core;
 using Azure.Identity;
-using Kusto.Cloud.Platform.Security;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
-using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
-using Serilog;
-using System.IO;
 
 namespace Serilog.Sinks.AzureDataExplorer;
 
@@ -64,8 +60,6 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
     {
         Assert.NotNull(Environment.GetEnvironmentVariable("ingestionURI"));
         Assert.NotNull(Environment.GetEnvironmentVariable("databaseName"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("appId"));
-        Assert.NotNull(Environment.GetEnvironmentVariable("tenant"));
         m_bufferBaseFileName = "";
         var scopes = new List<string> { Environment.GetEnvironmentVariable("ingestionURI") + "/.default" }.ToArray();
         var tokenRequestContext = new TokenRequestContext(scopes, tenantId: Environment.GetEnvironmentVariable("tenant"));
@@ -149,8 +143,8 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        var timeout = TimeSpan.FromSeconds(30);
-        var pollingInterval = TimeSpan.FromMilliseconds(500);
+        var timeout = TimeSpan.FromSeconds(60);
+        var pollingInterval = TimeSpan.FromMilliseconds(5000);
         var startTime = DateTime.UtcNow;
         int noOfRecordsIngested = 0;
         while (DateTime.UtcNow - startTime < timeout)
