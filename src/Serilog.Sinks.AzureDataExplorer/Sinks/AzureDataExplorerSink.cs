@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using System.IO.Compression;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Kusto.Data.Common;
 using Kusto.Data.Exceptions;

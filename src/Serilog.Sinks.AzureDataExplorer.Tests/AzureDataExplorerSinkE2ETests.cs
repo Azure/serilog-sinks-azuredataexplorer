@@ -14,15 +14,11 @@
 
 using Azure.Core;
 using Azure.Identity;
-using Kusto.Cloud.Platform.Security;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
-using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
-using Serilog;
-using System.IO;
 
 namespace Serilog.Sinks.AzureDataExplorer;
 

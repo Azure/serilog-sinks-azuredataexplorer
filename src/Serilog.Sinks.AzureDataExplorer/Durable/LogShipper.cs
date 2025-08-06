@@ -14,13 +14,11 @@
 
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Runtime.CompilerServices;
 using Kusto.Data.Common;
 using Kusto.Data.Exceptions;
 using Kusto.Ingest;
 using Kusto.Ingest.Exceptions;
 using Microsoft.IO;
-using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.AzureDataExplorer.Extensions;
