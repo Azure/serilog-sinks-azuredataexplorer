@@ -22,7 +22,7 @@
     <RepositoryUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</RepositoryUrl>
     <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
     <PackageReleaseNotes>
-      Version 1.2.0:
+      Version 2.0.0:
       - Added multi-target framework support for .NET 6.0 and .NET 8.0
       - Updated dependencies and improved compatibility
       - Enhanced CI/CD pipeline with test matrix for both .NET versions
@@ -37,8 +37,13 @@
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
 </Project>

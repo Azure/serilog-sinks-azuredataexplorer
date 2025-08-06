@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
 
     <IsPackable>false</IsPackable>
     <UserSecretsId>8918d8fc-2249-41d1-8051-725fd257d379</UserSecretsId>
