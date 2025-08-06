@@ -5,7 +5,7 @@
 A Serilog sink that writes events to an [Azure Data Explorer (Kusto)](https://docs.microsoft.com/en-us/azure/data-explorer) cluster.
 
 **Package** - [Serilog.Sinks.AzureDataExplorer](http://nuget.org/packages/serilog.sinks.azuredataexplorer)
-| **Platforms** - .Net 6.0
+| **Platforms** - .NET 6.0, .NET 8.0
 
 ## Getting started
 

@@ -6,12 +6,18 @@
     <IsPackable>true</IsPackable>
     <PackageIcon>serilog-sink-icon.png</PackageIcon>
     <PackageReleaseNotes>
-      Added GZip compression when sending data
-      Improved options default values
-      Added durability to the Azure Data Explorer Sink
-      Added Sample project
-      Added unit Tests
-      Added End To End Test cases</PackageReleaseNotes>
+      Version 1.2.0:
+      - Added multi-target framework support for .NET 6.0 and .NET 8.0
+      - Updated dependencies and improved compatibility
+      - Enhanced CI/CD pipeline with test matrix for both .NET versions
+      
+      Previous releases:
+      - Added GZip compression when sending data
+      - Improved options default values
+      - Added durability to the Azure Data Explorer Sink
+      - Added Sample project
+      - Added unit Tests
+      - Added End To End Test cases</PackageReleaseNotes>
     <AssemblyOriginatorKeyFile>adxSerilog.snk</AssemblyOriginatorKeyFile>
     <PublicSign>true</PublicSign>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -23,9 +29,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-    <None Update="serilog-sink-icon.png">
+    <None Include="serilog-sink-icon.png">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 
