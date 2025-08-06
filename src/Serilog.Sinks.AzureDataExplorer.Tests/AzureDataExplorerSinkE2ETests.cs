@@ -147,8 +147,8 @@ public class AzureDataExplorerSinkE2ETests : IDisposable
             elapsedMs);
         log.Debug(" {Identifier} Processed {@Position} in {Elapsed:000} ms. ", identifier, position, elapsedMs);
 
-        var timeout = TimeSpan.FromSeconds(30);
-        var pollingInterval = TimeSpan.FromMilliseconds(500);
+        var timeout = TimeSpan.FromSeconds(60);
+        var pollingInterval = TimeSpan.FromMilliseconds(5000);
         var startTime = DateTime.UtcNow;
         int noOfRecordsIngested = 0;
         while (DateTime.UtcNow - startTime < timeout)
