@@ -43,19 +43,19 @@ dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplore
 
 ### Test Tiers
 
-- **Tier 1 — Unit tests** (~134 tests): Self-contained, no setup needed. Use `--filter "FullyQualifiedName!~E2E&FullyQualifiedName!~AppSettings"` to run only these.
-- **Tier 2 — E2E tests** (~12 tests): Require a live ADX cluster. Fail with `KustoClientTimeoutException` or `AuthenticationFailedException` if prerequisites are missing.
+- **Tier 1 — Unit tests**: Self-contained, no setup needed. Use `--filter "FullyQualifiedName!~E2E&FullyQualifiedName!~AppSettings"` to run only these.
+- **Tier 2 — E2E tests**: Require a live ADX cluster. Fail with `KustoClientTimeoutException` or `AuthenticationFailedException` if prerequisites are missing.
 
 E2E test prerequisites (all required):
 1. `az login` (uses `AzureCliCredential`)
 2. Three environment variables: `ingestionURI`, `databaseName`, `tenant`
 3. Network access to the cluster (VPN required for internal/PPE clusters)
 
-See `.github/prompts/.update-versions.md` Step 5 for the full E2E setup guide.
+See `.github/prompts/update-versions.prompt.md` Step 5 for the full E2E setup guide.
 
 ## Dependency Upgrade Guidance
 
-When upgrading packages, use the reusable prompt: `.github/prompts/.update-versions.md`
+When upgrading packages, use the reusable prompt: `.github/prompts/update-versions.prompt.md`
 
 Key constraints:
 - TFM-conditional packages (System.*, Microsoft.Extensions.*) must keep version-to-TFM alignment: net6.0 → 8.0.x, net8.0 → 8.0.x or 9.0.x, net9.0 → 9.0.x

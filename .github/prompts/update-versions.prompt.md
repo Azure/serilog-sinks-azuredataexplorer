@@ -1,3 +1,8 @@
+---
+description: Step-by-step guide for upgrading NuGet packages and .NET framework versions in Serilog.Sinks.AzureDataExplorer. Run this prompt when you want to perform a dependency upgrade.
+agent: agent
+---
+
 # Dependency Update Guide for Serilog.Sinks.AzureDataExplorer
 
 This guide provides comprehensive instructions for updating NuGet packages and .NET framework versions in the Serilog Azure Data Explorer sink project.
@@ -78,6 +83,7 @@ All package versions must be updated in `src/Directory.Packages.props`, **NOT** 
 2. **Major Updates**: Review release notes for breaking changes
 3. **Group Updates**: Update related packages together (e.g., all Serilog.* packages)
 4. **Framework-Specific**: When updating System.* packages, ensure versions align with target frameworks
+5. **Intentional deferrals**: Some upgrades may be blocked by TFM constraints (e.g., a package that requires Microsoft.Extensions.* 10.x cannot be used while net6.0 is a target). Document these in the PR rather than forcing the upgrade.
 
 ## Step 3: Update Target Frameworks (if needed)
 
@@ -137,7 +143,6 @@ The test suite has two tiers. **Read this before running anything** to avoid con
 
 | | Tier 1 — Unit Tests | Tier 2 — E2E / Integration Tests |
 |---|---|---|
-| Count | ~134 tests | ~12 tests |
 | Requirements | None | Live ADX cluster + Azure CLI + 3 env vars + network access |
 | When to run | Always — fast, self-contained, sufficient for upgrades | When you want to verify end-to-end ingestion works |
 | If skipped | CI runs them on every PR | CI runs these too — safe to skip locally if no cluster access |
@@ -220,7 +225,7 @@ Test-NetConnection -ComputerName <cluster>.kusto.windows.net -Port 443
 dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj
 ```
 
-Expected result: all 146 tests pass across net8.0 and net6.0.
+Expected result: all tests pass across net8.0 and net6.0.
 
 ---
 
@@ -244,7 +249,7 @@ dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplore
 ## Step 6: Post-Update Checklist
 
 - [ ] All projects build without errors on all target frameworks
-- [ ] Tier 1 unit tests pass (63+ tests, no env vars needed)
+- [ ] Tier 1 unit tests pass (no env vars needed)
 - [ ] Tier 2 E2E tests pass (if `ingestionURI`/`databaseName` env vars are available — CI will validate these regardless)
 - [ ] No new compiler warnings introduced (pre-existing NETSDK1138 and NU1603 are OK)
 - [ ] Review package dependency tree for conflicts: `dotnet list package --include-transitive`
