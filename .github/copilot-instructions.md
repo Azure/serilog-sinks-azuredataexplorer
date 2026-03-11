@@ -31,7 +31,7 @@ Key rules:
 
 ## Hardcoded Versions
 
-`src/Serilog.Sinks.AzureDataExplorer/Extensions/AzureDataExplorerSinkOptionsExtensions.cs` has `ClientVersion = "2.0.0"` — this must be updated manually when releasing new versions.
+`src/Serilog.Sinks.AzureDataExplorer/Extensions/AzureDataExplorerSinkOptionsExtensions.cs` has `ClientVersion = "2.0.2"` — this must be updated manually when releasing new versions.
 
 ## Build & Test
 
@@ -51,11 +51,15 @@ E2E test prerequisites (all required):
 2. Three environment variables: `ingestionURI`, `databaseName`, `tenant`
 3. Network access to the cluster (VPN required for internal/PPE clusters)
 
-See `.github/prompts/update-versions.prompt.md` Step 5 for the full E2E setup guide.
+See `.github/prompts/update-versions.prompt.md` for the full E2E setup guide and the agentic upgrade skill.
 
 ## Dependency Upgrade Guidance
 
-When upgrading packages, use the reusable prompt: `.github/prompts/update-versions.prompt.md`
+When upgrading packages, use the agentic skill: `.github/prompts/update-versions.prompt.md`
+
+**Copilot CLI**: from the repo root, run `copilot`, then `/plan Follow the upgrade skill at @.github/prompts/update-versions.prompt.md`. Pre-approve dotnet/git tools with `copilot --allow-tool 'shell(dotnet:*)' --allow-tool 'shell(git:*)'`
+
+**VS Code agent mode**: reference the file as `#update-versions` and send.
 
 Key constraints:
 - TFM-conditional packages (System.*, Microsoft.Extensions.*) must keep version-to-TFM alignment: net6.0 → 8.0.x, net8.0 → 8.0.x or 9.0.x, net9.0 → 9.0.x

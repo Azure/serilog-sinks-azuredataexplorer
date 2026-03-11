@@ -1,347 +1,550 @@
 ---
-description: Step-by-step guide for upgrading NuGet packages and .NET framework versions in Serilog.Sinks.AzureDataExplorer. Run this prompt when you want to perform a dependency upgrade.
+description: Agentic skill — autonomously upgrade NuGet dependencies in Serilog.Sinks.AzureDataExplorer, verify the build and tests, then raise a draft PR for human review.
 agent: agent
 ---
 
-# Dependency Update Guide for Serilog.Sinks.AzureDataExplorer
+# Skill: Upgrade NuGet Dependencies — Serilog.Sinks.AzureDataExplorer
 
-This guide provides comprehensive instructions for updating NuGet packages and .NET framework versions in the Serilog Azure Data Explorer sink project.
+## How to invoke this skill
 
-## Overview
+**VS Code Copilot (agent mode)**: open Copilot Chat, switch to agent mode, type `#update-versions` and send. Copilot will execute all phases autonomously.
 
-The project uses **Central Package Management** via `Directory.Packages.props` located in the `src/` directory. All package versions are defined centrally in this file, and individual project files reference packages without specifying versions.
+**GitHub Copilot CLI** (recommended for fully autonomous execution):
+```sh
+# Install (one-time):
+npm install -g @github/copilot
 
-### Project Structure
-- **Main Project**: `Serilog.Sinks.AzureDataExplorer` - Multi-targeted library (net9.0, net8.0, net6.0, netstandard2.0, net471, net462)
-- **Sample Project**: `Serilog.Sinks.AzureDataExplorer.Samples` - Demo application (net8.0, net6.0)
-- **Test Project**: `Serilog.Sinks.AzureDataExplorer.Tests` - Unit and E2E tests (net8.0, net6.0)
+# From the repository root, start the CLI:
+copilot
 
-## Step 1: Check for Outdated Packages
+# Use plan mode first to review the approach:
+/plan Follow the upgrade skill at @.github/prompts/update-versions.prompt.md — upgrade all outdated NuGet packages, verify build and tests, then open a draft PR
 
-Run these commands from the repository root to identify outdated packages across all projects:
+# Review the plan, then tell it to proceed:
+Implement this plan
+```
+
+### CLI tips for this skill
+- **Plan mode first** (`Shift+Tab` or `/plan`): lets you review the upgrade plan before any files are touched. Approve only after verifying the constraints are respected.
+- **Autopilot**: once the plan is approved, the CLI can work autonomously through all phases without prompting at each step.
+- **Tool permissions**: pre-approve shell access for dotnet/git commands:
+  ```sh
+  copilot --allow-tool 'shell(dotnet:*)' --allow-tool 'shell(git:*)' --allow-tool 'shell(gh:*)' --deny-tool 'shell(git push --force)'
+  ```
+- **Model selection**: use `/model` to pick Opus 4.5 for this task — it handles multi-step constraint reasoning better than Sonnet for TFM alignment rules.
+- **If context gets large**: the CLI auto-compacts, but you can run `/compact` after Phase 1 discovery if the `--outdated` output is very long.
+
+---
+
+## Safety principles (read before executing anything)
+
+This skill modifies source files and pushes a branch. Follow these rules at all times:
+
+1. **Never push directly to `main` or `master`** — always create a new branch first (Phase 0).
+2. **Never modify `.csproj` files** with `Version=` attributes — causes NU1008.
+3. **Never collapse TFM-conditional `<PackageVersion>` entries** into a single unconditional entry.
+4. **Never upgrade `FluentAssertions` past 6.x** without explicit instruction.
+5. **Only edit `src/Directory.Packages.props`** for version changes — no other files unless instructed.
+6. **Stop and report** if any new build error or test regression appears — do not push a broken state.
+7. **Open a draft PR**, not a ready-for-review PR — humans must review before merge.
+8. **Do not run post-install scripts** from NuGet packages — only declarative version bumps in XML.
+
+---
+
+## Project context (read this first — especially important when running from CLI)
+
+This is **Serilog.Sinks.AzureDataExplorer** — a NuGet library that ships structured logs to Azure Data Explorer (Kusto), owned by Microsoft.
+
+### Repository layout
+```
+repo root/
+  src/
+    Directory.Packages.props        ← ALL package versions live here (Central Package Management)
+    Directory.Build.props           ← shared TargetFrameworks, AssemblyVersion, FileVersion, Version
+    Serilog.Sinks.AzureDataExplorer/
+      Serilog.Sinks.AzureDataExplorer.csproj   ← main library (no Version= in PackageReferences)
+      Extensions/
+        AzureDataExplorerSinkOptionsExtensions.cs  ← contains hardcoded ClientVersion string
+    Serilog.Sinks.AzureDataExplorer.Tests/
+      Serilog.Sinks.AzureDataExplorer.Tests.csproj
+    Serilog.Sinks.AzureDataExplorer.Samples/
+      Serilog.Sinks.AzureDataExplorer.Samples.csproj
+```
+
+### Target frameworks
+- **Main library**: net9.0, net8.0, net6.0, netstandard2.0, net471, net462
+- **Tests + Samples**: net8.0, net6.0
+
+### Key architectural facts
+- **Central Package Management (CPM)**: `src/Directory.Packages.props` is the single source of truth for all package versions. Individual `.csproj` files reference packages *without* `Version=` attributes — adding one causes build error NU1008.
+- **TFM-conditional versions**: Some packages (e.g. `System.Text.Json`) have separate `<PackageVersion>` entries per TFM using `Condition` attributes. These must stay separate — do not collapse them.
+- **FluentAssertions override**: The test `.csproj` has `<PackageVersion Update="FluentAssertions" Version="6.9.0" />` — intentional, leave it.
+- **Hardcoded version string**: `ClientVersion` in `AzureDataExplorerSinkOptionsExtensions.cs` — only update when doing a library release, not for dependency-only upgrades.
+- **Shared build props**: `Directory.Build.props` holds `<Version>`, `<AssemblyVersion>`, `<FileVersion>` — do not edit for a dependency-only upgrade.
+
+---
+
+## Phase 0 — Pre-flight checks (do this before anything else)
+
+From the **repository root**:
+
+```sh
+# Confirm you are in the right repository
+cat src/Directory.Build.props | grep -E "PackageProjectUrl|Version>"
+
+# Confirm working tree is clean — do not start if there are uncommitted changes
+git status
+
+# Confirm you are on main (or the expected base branch)
+git branch --show-current
+
+# Create the feature branch NOW — before any file edits
+git checkout -b chore/upgrade-nuget-deps-$(date +%Y-%m)
+```
+
+If `git status` shows uncommitted changes, **stop** and report what was found. Do not proceed.
+
+---
+
+## Phase 1 — Discover what needs upgrading
+
+Run from the **repository root**:
 
 ```sh
 dotnet list src/Serilog.Sinks.AzureDataExplorer/Serilog.Sinks.AzureDataExplorer.csproj package --outdated
-```
-
-```sh
 dotnet list src/Serilog.Sinks.AzureDataExplorer.Samples/Serilog.Sinks.AzureDataExplorer.Samples.csproj package --outdated
-```
-
-```sh
 dotnet list src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj package --outdated
 ```
 
-### Understanding the Output
-The commands will show:
-- **Requested** version (current)
-- **Resolved** version (what's actually being used)
-- **Latest** version (newest available on NuGet)
+Also run a security scan to identify packages with known CVEs:
 
-Pay special attention to:
-- Major version changes (may include breaking changes)
-- Security vulnerabilities indicated in the output
-- Deprecated packages
+```sh
+dotnet list src/Serilog.Sinks.AzureDataExplorer/Serilog.Sinks.AzureDataExplorer.csproj package --vulnerable --include-transitive
+dotnet list src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj package --vulnerable --include-transitive
+```
 
-## Step 2: Update Package Versions
+From the output, build a list of: package name, current version, latest version, upgrade type (patch / minor / major), and any CVE severity.
 
-### Important: Edit Directory.Packages.props
+> **Security rule**: Packages with High or Critical CVEs must be upgraded (or the CVE explicitly accepted with justification in the PR). Do not defer a security fix without documenting the reason.
 
-All package versions must be updated in `src/Directory.Packages.props`, **NOT** in individual `.csproj` files.
+---
 
-#### Key Package Categories:
+## Phase 2 — Plan before touching any file
 
-1. **Core Dependencies** (used across all projects):
-   - `Microsoft.Azure.Kusto.Ingest` - Azure Data Explorer client
-   - `Serilog` - Core logging framework
-   - `Serilog.Formatting.Compact` - Compact JSON formatting
-   - `Serilog.Sinks.File` - File-based logging for durable sink
+Before making any edits, produce an upgrade plan that lists:
+- Every package you will bump and to what version
+- Every package you will intentionally defer and why (see constraints below)
+- Any breaking-change risk (major bumps)
+- Any CVEs addressed by this upgrade
 
-2. **Microsoft.Extensions.*** Packages (configuration & DI):
-   - Update all `Microsoft.Extensions.*` packages together to maintain compatibility
-   - These include Configuration, Logging, DependencyInjection packages
+Apply the constraints in the section below to decide what to bump and what to skip. If a constraint blocks an upgrade, note it in the plan — do not skip silently.
 
-3. **Framework-Conditional Dependencies**:
-   - Some packages have different versions based on `TargetFramework` conditions
-   - When upgrading, maintain the conditional logic (e.g., net6.0 vs net8.0 vs net9.0)
-   - Example pattern:
-     ```xml
-     <PackageVersion Include="System.Text.Json" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-     <PackageVersion Include="System.Text.Json" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
-     ```
+---
 
-4. **Test Dependencies**:
-   - `Microsoft.NET.Test.Sdk` - Test platform
-   - `xunit` and `xunit.runner.visualstudio` - Test framework
-   - `coverlet.collector` - Code coverage
-   - `FluentAssertions` - Assertion library
-   - `Xunit.SkippableFact` - Conditional test execution
+## Phase 3 — Apply changes
 
-### Update Strategy:
+### The only file you edit for versions: `src/Directory.Packages.props`
 
-1. **Minor/Patch Updates**: Generally safe, apply immediately
-2. **Major Updates**: Review release notes for breaking changes
-3. **Group Updates**: Update related packages together (e.g., all Serilog.* packages)
-4. **Framework-Specific**: When updating System.* packages, ensure versions align with target frameworks
-5. **Intentional deferrals**: Some upgrades may be blocked by TFM constraints (e.g., a package that requires Microsoft.Extensions.* 10.x cannot be used while net6.0 is a target). Document these in the PR rather than forcing the upgrade.
+This project uses Central Package Management. **Never add or change `Version=` in any `.csproj` file** — that causes error NU1008 and will break the build.
 
-## Step 3: Update Target Frameworks (if needed)
+Exception: the test project overrides `FluentAssertions` via `<PackageVersion Update="FluentAssertions" ... />` in its own `.csproj` — this is intentional, leave it.
 
-### Current Target Frameworks:
-- **Main Library**: net9.0, net8.0, net6.0, netstandard2.0, net471, net462
-- **Tests & Samples**: net8.0, net6.0
+**For simple bumps** (one unconditional `<PackageVersion>` entry): change `Version` in `Directory.Packages.props` only.
 
-### To Add a New Target Framework:
+**For TFM-conditional entries** (e.g. `System.Text.Json`): there are multiple `<PackageVersion>` entries with `Condition` attributes — update EACH one separately, keeping the conditions intact. Never collapse them into a single unconditional entry.
 
-1. **Update Main Project** (`Serilog.Sinks.AzureDataExplorer.csproj`):
-   ```xml
-   <TargetFrameworks>$(TargetFrameworks);net10.0;net9.0;net8.0;net6.0;netstandard2.0</TargetFrameworks>
-   ```
+After every batch of edits, run:
+```sh
+cd src && dotnet restore && dotnet build
+```
+Fix any errors before proceeding to the next batch.
 
-2. **Update Test Project** (`Serilog.Sinks.AzureDataExplorer.Tests.csproj`):
-   ```xml
-   <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
-   ```
+---
 
-3. **Update Directory.Packages.props** with framework-specific package versions:
-   ```xml
-   <PackageVersion Include="System.Text.Json" Version="10.0.0" Condition="'$(TargetFramework)' == 'net10.0'" />
-   ```
+## Phase 4 — Verify: build
 
-### To Remove an EOL Framework:
-- Remove the framework from `<TargetFrameworks>` entries
-- Remove or update conditional package references
-- Check for framework-specific code using `#if` directives
-
-## Step 4: Validate Changes
-
-### Build Verification
-From the `src/` directory:
+From the **`src/` directory** (`cd src` first):
 
 ```sh
 dotnet clean
 dotnet restore
-dotnet build --configuration Release
+dotnet build
 ```
 
-This will:
-- Clean previous build artifacts
-- Restore packages from the updated Directory.Packages.props
-- Build for all target frameworks
-- Report any compilation errors
-
-### Expected Build Output:
-- All target frameworks should build successfully
-- Watch for deprecation warnings
-- Note any analyzer warnings about obsolete APIs
-
-## Step 5: Run Tests
-
-### First: decide which test tier you need
-
-The test suite has two tiers. **Read this before running anything** to avoid confusing failures.
-
-| | Tier 1 — Unit Tests | Tier 2 — E2E / Integration Tests |
-|---|---|---|
-| Requirements | None | Live ADX cluster + Azure CLI + 3 env vars + network access |
-| When to run | Always — fast, self-contained, sufficient for upgrades | When you want to verify end-to-end ingestion works |
-| If skipped | CI runs them on every PR | CI runs these too — safe to skip locally if no cluster access |
+All 6 target frameworks must build. Pre-existing warnings NETSDK1138 (net6.0 EOL) and NU1603 are acceptable — do not treat them as failures. Any **new** error or **new** warning is a blocker.
 
 ---
 
-### Path A — Tier 1 only (recommended default)
+## Phase 5 — Verify: tests
 
-No setup required. Run from the `src/` directory:
+Run Tier 1 unit tests (no credentials needed) from the **`src/` directory**:
 
 ```sh
 dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --filter "FullyQualifiedName!~E2E&FullyQualifiedName!~AppSettings"
 ```
 
-This validates all sink logic, options, extensions, durable subsystem, and unit-level scenarios across net8.0 and net6.0. This is sufficient for verifying a package upgrade.
+**Pass condition**: all tests that were passing before your changes still pass. If a test that was already failing before your changes still fails, note it in the PR but do not block the PR on it. CI will run E2E tests after merge.
+
+If any previously-passing test now fails:
+1. Check whether the failure is caused by a breaking API change in the upgraded package.
+2. If yes, fix the test or revert only that package upgrade and document the deferral.
+3. If the cause is unclear, revert the change and note it as a blocked upgrade in the PR.
+4. **Never push a state where previously-passing tests now fail.**
 
 ---
 
-### Path B — Full suite including Tier 2 E2E tests
+## Phase 6 — Commit and open a draft PR
 
-Complete **all four steps below in order** before running the test command. Skipping any step will cause E2E tests to fail with `KustoClientTimeoutException`, `AuthenticationFailedException`, or `ArgumentNullException`.
-
-**Step B1 — Log in to Azure CLI:**
+From the **repository root**:
 
 ```sh
-az login
-# If your org requires a specific tenant:
-az login --tenant <your-tenant-id>
+# Stage only the files you intentionally changed
+git add src/Directory.Packages.props
+# Add any other files changed (e.g. Directory.Build.props if version was bumped)
+git diff --name-only --cached   # verify what you are about to commit
+git commit -m "chore: upgrade NuGet dependencies $(date +%B\ %Y)"
+git push --set-upstream origin chore/upgrade-nuget-deps-$(date +%Y-%m)
 ```
 
-**Step B2 — Set environment variables** (substitute your actual values):
-
-PowerShell:
-```powershell
-$env:ingestionURI = "<your-adx-ingestion-uri>"    # e.g. https://ingest-mycluster.westus2.kusto.windows.net
-$env:databaseName = "<your-database-name>"         # e.g. TestDatabase
-$env:tenant       = "<your-azure-ad-tenant-id>"    # e.g. 72f988bf-86f1-41af-91ab-2d7cd011db47
-```
-
-Bash / macOS / Linux:
-```sh
-export ingestionURI="<your-adx-ingestion-uri>"
-export databaseName="<your-database-name>"
-export tenant="<your-azure-ad-tenant-id>"
-```
-
-> **Note**: All three variables are required. The `tenant` var is used by `AzureCliCredential` to scope the token to the correct Azure AD tenant. Missing any one will cause authentication to fail.
-
-**Step B3 — Verify your setup:**
+Then open a **draft** PR with the GitHub CLI:
 
 ```sh
-az account show --query "{subscription:name, tenantId:tenantId}" -o table
+gh pr create \
+  --draft \
+  --title "chore: upgrade NuGet dependencies $(date +%B\ %Y)" \
+  --body "$(cat <<'EOF'
+## Changes
+
+### Packages bumped
+| Package | Old | New | Type |
+|---------|-----|-----|------|
+<!-- fill from your Phase 2 upgrade plan -->
+
+### Intentionally deferred
+| Package | Latest | Reason |
+|---------|--------|--------|
+<!-- list any packages skipped and why -->
+
+### Security
+- CVEs addressed: <!-- list any -->
+- CVEs still present (deferred): <!-- list with justification -->
+
+## Verification
+- Build: all 6 target frameworks clean (0 new errors, 0 new warnings)
+- Tier 1 unit tests: all previously-passing tests still pass
+- E2E tests: skipped locally — CI will validate on this PR
+
+## Notes
+- This is a dependency-only upgrade. `ClientVersion` in `AzureDataExplorerSinkOptionsExtensions.cs` was NOT changed.
+- Reviewers: please verify deferred packages and any CVE deferrals before merging.
+EOF
+)" \
+  --base main
 ```
 
-PowerShell — confirm env vars are set:
-```powershell
-Write-Host "ingestionURI = $env:ingestionURI"
-Write-Host "databaseName = $env:databaseName"
-Write-Host "tenant       = $env:tenant"
-```
-
-All three env vars must be non-empty, and `az account show` must show the tenant that owns the ADX cluster.
-
-**Step B4 — Verify network access to the cluster:**
-
-E2E tests must reach both endpoints on port 443:
-- Query endpoint: `https://<cluster>.kusto.windows.net`
-- Ingestion endpoint: `https://ingest-<cluster>.kusto.windows.net`
-
-If the cluster is an internal or PPE environment, **make sure you are connected to the required VPN** before running tests. DNS resolving the hostname does not guarantee HTTPS connectivity — a timed-out `KustoClientTimeoutException` is the symptom of a missing VPN connection.
-
-PowerShell connectivity check:
-```powershell
-Test-NetConnection -ComputerName <cluster>.kusto.windows.net -Port 443
-```
-
-**Run the full suite** (from the `src/` directory):
-
-```sh
-dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj
-```
-
-Expected result: all tests pass across net8.0 and net6.0.
+Fill in the tables from your Phase 2 plan before running `gh pr create`. The PR must be **draft** — do not promote to ready-for-review.
 
 ---
 
-### Optional: Run with code coverage
+## Constraints you must follow
 
-From the `src/` directory:
+### Central Package Management rules
+- Edit `src/Directory.Packages.props` only — never `.csproj` files (except the intentional FluentAssertions override already there)
+- Never add `Version=` to a `<PackageReference>` — this causes NU1008
 
-```sh
-dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --collect:"XPlat Code Coverage" --results-directory ../TestResults
-```
+### TFM version alignment (System.* and Microsoft.Extensions.*)
 
-Coverage results are saved as `.cobertura.xml` files in `../TestResults`. View them with:
-- VS Code extension: **Coverage Gutters**
-- CLI: `reportgenerator -reports:../TestResults/**/*.xml -targetdir:../TestResults/html`
-
-To run a single framework only:
-```sh
-dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --framework net8.0
-```
-
-## Step 6: Post-Update Checklist
-
-- [ ] All projects build without errors on all target frameworks
-- [ ] Tier 1 unit tests pass (no env vars needed)
-- [ ] Tier 2 E2E tests pass (if `ingestionURI`/`databaseName` env vars are available — CI will validate these regardless)
-- [ ] No new compiler warnings introduced (pre-existing NETSDK1138 and NU1603 are OK)
-- [ ] Review package dependency tree for conflicts: `dotnet list package --include-transitive`
-- [ ] Check for hardcoded version strings: `ClientVersion` in `AzureDataExplorerSinkOptionsExtensions.cs`
-- [ ] Update package release notes in `.csproj` files if doing a new release
-- [ ] Update version numbers (`<AssemblyVersion>` and `<VersionPrefix>`) if releasing
-- [ ] Commit changes with descriptive message (e.g., "chore: Update NuGet dependencies to latest versions")
-- [ ] Create PR with summary of updated packages and any breaking changes
-
-## Common Issues & Solutions
-
-### Issue: Package Version Conflict
-**Symptom**: Build warnings about version conflicts
-**Solution**: Check transitive dependencies with `dotnet list package --include-transitive` and align versions
-
-### Issue: Breaking API Changes
-**Symptom**: Compilation errors after update
-**Solution**: Review package release notes and migration guides, update code accordingly
-
-### Issue: E2E Tests Fail
-**Symptom**: Tests fail with authentication or connection errors
-**Solution**: Verify environment variables are set correctly, check ADX cluster accessibility
-
-### Issue: Framework-Specific Build Failures
-**Symptom**: Build succeeds on some frameworks but fails on others
-**Solution**: Review conditional package references and ensure appropriate versions for each framework
-
----
-
-## Breaking Changes Reference
-
-### Serilog 3.x → 4.x
-- `IBatchedLogEventSink` moved from `Serilog.Sinks.PeriodicBatching` to `Serilog` core
-- `PeriodicBatchingSink` wrapper removed — use `IBatchedLogEventSink` directly with `BatchingOptions`
-- `Serilog.Sinks.PeriodicBatching` NuGet package is obsolete for Serilog 4.x
-
-### Serilog.Sinks.File 6.x → 7.x
-- Requires Serilog 4.x (will not compile with 3.x)
-
-### Serilog.Extensions.Logging 8.x → 9.x
-- Requires Serilog 4.x and Microsoft.Extensions.Logging 8.0.0+
-
-### Serilog.Settings.Configuration 8.x → 9.x
-- Requires Serilog 4.x and Microsoft.Extensions.Configuration 8.0.0+
-
-### Kusto.Ingest 13.x → 14.x
-- Public API unchanged. Internal HTTP client updated, may change retry behavior
-- Updated Azure.Identity transitive dependency
-
-### System.Text.Json / System.IO.Pipelines / System.Threading.Channels 8.0.x → 9.0.x
-- API stable, performance improvements
-- net6.0 MUST stay on 8.0.x — do not upgrade to 9.0.x for that TFM
-
-### FluentAssertions 6.x → 7.x
-- **Major breaking changes** — `BeEquivalentTo()` options changed, `WithMessage()` requires exact match, many deprecated methods removed
-- **Recommendation**: Stay on 6.x unless ready for significant test code changes
-
-### Hardcoded Version Strings
-After upgrading, always search source code for hardcoded version strings:
-- `Extensions/AzureDataExplorerSinkOptionsExtensions.cs`: `ClientVersion = "2.0.0"` — update when releasing
-- `Directory.Build.props`: `<Version>`, `<AssemblyVersion>`, `<FileVersion>`
-
-## TFM Version Alignment Rules
-
-| TFM | System.* / Microsoft.Extensions.* version |
-|-----|-------------------------------------------|
+| TFM | Allowed version range |
+|-----|----------------------|
 | net462 / net471 | 8.0.x |
 | netstandard2.0 | 8.0.x |
-| net6.0 (EOL) | 8.0.x only |
+| net6.0 (EOL) | 8.0.x — do NOT go to 9.x |
 | net8.0 (LTS) | 8.0.x or 9.0.x |
 | net9.0 (STS) | 9.0.x |
 
-Serilog ecosystem packages (Serilog, Serilog.Sinks.*, Serilog.Formatting.*) are TFM-agnostic — use the same version for all targets.
+Serilog ecosystem packages (`Serilog`, `Serilog.Sinks.*`, `Serilog.Formatting.*`) are TFM-agnostic — use the same version for all targets.
 
-## CPM Modification Rules
+### Known breaking changes — apply these rules before bumping
 
-1. **Simple bump**: Change `Version` in `Directory.Packages.props` only — never touch `.csproj`
-2. **TFM-conditional**: Update EACH conditional entry separately. Never collapse into one unconditional entry while the TFM still exists
-3. **Version overrides**: The test `.csproj` overrides `FluentAssertions` via `<PackageVersion Update="FluentAssertions" Version="6.9.0" />` — this is intentional. Decide whether to keep or remove after upgrading the central version
-4. **Verification**: Run `dotnet restore && dotnet build && dotnet test` after every change
+| Package | Rule |
+|---------|------|
+| `FluentAssertions` 7.x | **Do not upgrade.** Major breaking changes in test assertions. Stay on 6.x unless explicitly asked. |
+| `xunit.runner.visualstudio` 3.x | Requires xunit 3.x — do not upgrade while on xunit 2.x. |
+| `Microsoft.NET.Test.Sdk` 18.x | Dropped net6.0 support — do not upgrade while tests target net6.0. |
+| `Serilog.Settings.Configuration` 10.x | Requires `Microsoft.Extensions.Configuration` ≥ 10.x — blocked while net6.0 TFM pins at 8.0.x. |
+| `Serilog` 4.x | If already on 4.x, bumping within 4.x is safe. |
+| `Microsoft.Azure.Kusto.Ingest` 14.x | Public API unchanged, safe to bump. |
+| `System.Text.Json` 9.x | Only for net8.0 / net9.0 entries — do not apply to net6.0 entry. |
 
-## Additional Notes
+---
 
-- **Multi-Targeting Complexity**: The project supports 6 target frameworks. Ensure compatibility across all.
-- **Implicit Usings**: The project uses C# 10.0 with implicit usings enabled.
-- **Strong-Naming**: Assemblies are signed with `adxSerilog.snk` in Release configuration.
-- **Central Package Management**: Always update `Directory.Packages.props`, never individual project files.
-- **Test Strategy**: Unit tests don't require ADX connection; E2E tests (marked with `[SkippableFact]`) need credentials.
+## Reference: Breaking changes
+
+### Serilog 3.x → 4.x (only relevant if upgrading from 3.x)
+- `IBatchedLogEventSink` moved from `Serilog.Sinks.PeriodicBatching` to `Serilog` core
+- `PeriodicBatchingSink` wrapper removed — use `IBatchedLogEventSink` directly with `BatchingOptions`
+- `Serilog.Sinks.PeriodicBatching` NuGet package becomes obsolete
+
+### Serilog.Extensions.Logging 9.x
+- Requires Serilog 4.x and `Microsoft.Extensions.Logging` ≥ 8.0.0
+
+### Serilog.Settings.Configuration 9.x
+- Requires Serilog 4.x and `Microsoft.Extensions.Configuration` ≥ 8.0.0
+
+### FluentAssertions 7.x (do not apply)
+- `BeEquivalentTo()` options changed, `WithMessage()` requires exact match, many deprecated methods removed
+
+---
+
+## Reference: E2E test setup (for context — CI handles this)
+
+E2E tests require:
+1. `az login` (uses `AzureCliCredential`)
+2. Env vars: `ingestionURI`, `databaseName`, `tenant`
+3. Network access to the ADX cluster (VPN if internal/PPE)
+
+You do not need to run E2E tests. The PR will trigger CI which runs them.
+
+---
 
 ## References
 
-- [Central Package Management Docs](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
-- [.NET Framework Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core)
-- [Serilog Documentation](https://serilog.net/)
+- [Central Package Management](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
+- [.NET Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core)
+- [Serilog Docs](https://serilog.net/)
+- [Azure Data Explorer .NET SDK](https://learn.microsoft.com/azure/data-explorer/kusto/api/netfx/about-the-sdk)
+- [dotnet list package --vulnerable](https://learn.microsoft.com/dotnet/core/tools/dotnet-list-package)
+
+---
+
+## Project context (read this first — especially important when running from CLI)
+
+This is **Serilog.Sinks.AzureDataExplorer** — a NuGet library that ships structured logs to Azure Data Explorer (Kusto), owned by Microsoft.
+
+### Repository layout
+```
+repo root/
+  src/
+    Directory.Packages.props        ← ALL package versions live here (Central Package Management)
+    Directory.Build.props           ← shared TargetFrameworks, AssemblyVersion, FileVersion, Version
+    Serilog.Sinks.AzureDataExplorer/
+      Serilog.Sinks.AzureDataExplorer.csproj   ← main library (no Version= in PackageReferences)
+      Extensions/
+        AzureDataExplorerSinkOptionsExtensions.cs  ← contains hardcoded ClientVersion string
+    Serilog.Sinks.AzureDataExplorer.Tests/
+      Serilog.Sinks.AzureDataExplorer.Tests.csproj
+    Serilog.Sinks.AzureDataExplorer.Samples/
+      Serilog.Sinks.AzureDataExplorer.Samples.csproj
+```
+
+### Target frameworks
+- **Main library**: net9.0, net8.0, net6.0, netstandard2.0, net471, net462
+- **Tests + Samples**: net8.0, net6.0
+
+### Key architectural facts for this task
+- **Central Package Management (CPM)**: `src/Directory.Packages.props` is the single source of truth for all package versions. Individual `.csproj` files reference packages *without* `Version=` attributes — adding one causes build error NU1008.
+- **TFM-conditional versions**: Some packages (e.g. `System.Text.Json`) have separate `<PackageVersion>` entries per TFM using `Condition` attributes. These must stay separate — do not collapse them.
+- **FluentAssertions override**: The test `.csproj` has `<PackageVersion Update="FluentAssertions" Version="6.9.0" />` — intentional, leave it.
+- **Hardcoded version string**: `ClientVersion = "2.0.0"` in `AzureDataExplorerSinkOptionsExtensions.cs` — only update when doing a library release, not for dependency-only upgrades.
+- **Shared build props**: `Directory.Build.props` holds `<Version>`, `<AssemblyVersion>`, `<FileVersion>`, and `<TargetFrameworks>` — do not edit these for a dependency upgrade.
+
+---
+
+## Your task
+
+Upgrade all outdated NuGet packages in this repository following the constraints below, verify the build and tests pass, then commit and open a pull request for human review. Do not wait for approval at each step — work autonomously from discovery through PR creation.
+
+---
+
+## Phase 1 — Discover what needs upgrading
+
+Run from the **repository root**:
+
+```sh
+dotnet list src/Serilog.Sinks.AzureDataExplorer/Serilog.Sinks.AzureDataExplorer.csproj package --outdated
+dotnet list src/Serilog.Sinks.AzureDataExplorer.Samples/Serilog.Sinks.AzureDataExplorer.Samples.csproj package --outdated
+dotnet list src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj package --outdated
+```
+
+From the output, build a list of: package name, current version, latest version, upgrade type (patch / minor / major).
+
+---
+
+## Phase 2 — Plan before touching any file
+
+Before making any edits, produce an upgrade plan that lists:
+- Every package you will bump and to what version
+- Every package you will intentionally defer and why (see constraints below)
+- Any breaking-change risk (major bumps)
+
+Apply the constraints in the section below to decide what to bump and what to skip. If a constraint blocks an upgrade, note it in the plan — do not skip silently.
+
+---
+
+## Phase 3 — Apply changes
+
+### The only file you edit for versions: `src/Directory.Packages.props`
+
+This project uses Central Package Management. **Never add or change `Version=` in any `.csproj` file** — that causes error NU1008 and will break the build.
+
+Exception: the test project overrides `FluentAssertions` via `<PackageVersion Update="FluentAssertions" ... />` in its own `.csproj` — this is intentional, leave it.
+
+**For simple bumps** (one unconditional `<PackageVersion>` entry): change `Version` in `Directory.Packages.props` only.
+
+**For TFM-conditional entries** (e.g. `System.Text.Json`): there are multiple `<PackageVersion>` entries with `Condition` attributes — update EACH one separately, keeping the conditions intact. Never collapse them into a single unconditional entry.
+
+After every batch of edits, run:
+```sh
+cd src && dotnet restore && dotnet build
+```
+Fix any errors before proceeding to the next batch.
+
+---
+
+## Phase 4 — Verify: build
+
+From the **`src/` directory** (`cd src` first):
+
+```sh
+dotnet clean
+dotnet restore
+dotnet build
+```
+
+All 6 target frameworks must build. Pre-existing warnings NETSDK1138 (net6.0 EOL) and NU1603 are acceptable — do not treat them as failures. Any new error or new warning is a blocker.
+
+---
+
+## Phase 5 — Verify: tests
+
+Run Tier 1 unit tests (no credentials needed) from the **`src/` directory**:
+
+```sh
+dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj --filter "FullyQualifiedName!~E2E&FullyQualifiedName!~AppSettings"
+```
+
+**Pass condition**: all tests that were passing before your changes still pass. If a test that was already failing before your changes still fails, note it in the PR but do not block the PR on it. CI will run E2E tests after merge.
+
+If any previously-passing test now fails:
+1. Check whether the failure is caused by a breaking API change in the upgraded package.
+2. If yes, fix the test or revert only that package upgrade and document the deferral.
+3. If the cause is unclear, revert the change and note it as a blocked upgrade in the PR.
+
+---
+
+## Phase 6 — Commit and open a PR
+
+From the **repository root**:
+
+```sh
+git checkout -b chore/upgrade-nuget-deps-<YYYY-MM>
+git add src/Directory.Packages.props
+git commit -m "chore: upgrade NuGet dependencies <Month YYYY>"
+git push --set-upstream origin chore/upgrade-nuget-deps-<YYYY-MM>
+```
+
+Then open a PR with the GitHub CLI:
+
+```sh
+gh pr create \
+  --title "chore: upgrade NuGet dependencies <Month YYYY>" \
+  --body "$(cat <<'EOF'
+## Changes
+
+### Packages bumped
+| Package | Old | New | Type |
+|---------|-----|-----|------|
+<!-- fill from your upgrade plan -->
+
+### Intentionally deferred
+<!-- list any packages skipped and why -->
+
+## Verification
+- Tier 1 unit tests: X passed, Y failed (pre-existing: list any)
+- Build: all 6 target frameworks clean
+- E2E tests: skipped locally — CI will validate
+
+## Notes
+- `ClientVersion` in `AzureDataExplorerSinkOptionsExtensions.cs` was NOT updated (dependency-only upgrade)
+EOF
+)" \
+  --base main
+```
+
+Fill in the table and deferred list from your Phase 2 plan before running `gh pr create`.
+
+---
+
+## Constraints you must follow
+
+### Central Package Management rules
+- Edit `src/Directory.Packages.props` only — never `.csproj` files (except the intentional FluentAssertions override already there)
+- Never add `Version=` to a `<PackageReference>` — this causes NU1008
+
+### TFM version alignment (System.* and Microsoft.Extensions.*)
+
+| TFM | Allowed version range |
+|-----|----------------------|
+| net462 / net471 | 8.0.x |
+| netstandard2.0 | 8.0.x |
+| net6.0 (EOL) | 8.0.x — do NOT go to 9.x |
+| net8.0 (LTS) | 8.0.x or 9.0.x |
+| net9.0 (STS) | 9.0.x |
+
+Serilog ecosystem packages (`Serilog`, `Serilog.Sinks.*`, `Serilog.Formatting.*`) are TFM-agnostic — use the same version for all targets.
+
+### Known breaking changes — apply these rules before bumping
+
+| Package | Rule |
+|---------|------|
+| `FluentAssertions` 7.x | **Do not upgrade.** Major breaking changes in test assertions. Stay on 6.x unless explicitly asked. |
+| `Serilog` 4.x | If already on 4.x, bumping within 4.x is safe. If upgrading from 3.x, API changes required (see reference below). |
+| `Serilog.Sinks.File` 7.x | Requires Serilog 4.x — ensure both are upgraded together. |
+| `Microsoft.Azure.Kusto.Ingest` 14.x | Public API unchanged, safe to bump. |
+| `System.Text.Json` 9.x | Only for net8.0 / net9.0 entries — do not apply to net6.0 entry. |
+
+### Hardcoded version string
+`src/Serilog.Sinks.AzureDataExplorer/Extensions/AzureDataExplorerSinkOptionsExtensions.cs` contains `ClientVersion = "2.0.0"`. Only update this if you are doing a library release (not a dependency-only upgrade). Note its current value in the PR body either way.
+
+---
+
+## Reference: Breaking changes
+
+### Serilog 3.x → 4.x (only relevant if upgrading from 3.x)
+- `IBatchedLogEventSink` moved from `Serilog.Sinks.PeriodicBatching` to `Serilog` core
+- `PeriodicBatchingSink` wrapper removed — use `IBatchedLogEventSink` directly with `BatchingOptions`
+- `Serilog.Sinks.PeriodicBatching` NuGet package becomes obsolete
+
+### Serilog.Extensions.Logging 9.x
+- Requires Serilog 4.x and `Microsoft.Extensions.Logging` ≥ 8.0.0
+
+### Serilog.Settings.Configuration 9.x
+- Requires Serilog 4.x and `Microsoft.Extensions.Configuration` ≥ 8.0.0
+
+### FluentAssertions 7.x (do not apply)
+- `BeEquivalentTo()` options changed, `WithMessage()` requires exact match, many deprecated methods removed
+
+---
+
+## Reference: E2E test setup (for context — CI handles this)
+
+E2E tests require:
+1. `az login` (uses `AzureCliCredential`)
+2. Env vars: `ingestionURI`, `databaseName`, `tenant`
+3. Network access to the ADX cluster (VPN if internal/PPE)
+
+You do not need to run E2E tests. The PR will trigger CI which runs them. If you have the env vars available, you may optionally run:
+
+```sh
+cd src
+dotnet test Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj
+```
+
+---
+
+## References
+
+- [Central Package Management](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
+- [.NET Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core)
+- [Serilog Docs](https://serilog.net/)
 - [Azure Data Explorer .NET SDK](https://learn.microsoft.com/azure/data-explorer/kusto/api/netfx/about-the-sdk)

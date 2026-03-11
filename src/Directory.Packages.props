@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   
-  <!-- Suppress framework warning messages for projects targeting .NET 6.0 -->
+  <!-- Suppress framework warning messages for projects targeting .NET 6.0 (EOL) -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
@@ -27,37 +27,37 @@
     
     <!-- Conditional dependencies to handle target framework compatibility -->
     <PackageVersion Include="System.ValueTuple" Version="4.5.0" Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'netstandard2.0'" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.1" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="System.Threading.Channels" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="System.Threading.Channels" Version="9.0.1" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="System.Threading.Channels" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="System.IO.Pipelines" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="System.IO.Pipelines" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="System.Text.Json" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.Primitives" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.Primitives" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyModel" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyModel" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.Primitives" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyModel" Version="8.0.2" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyModel" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.Options" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.14" Condition="'$(TargetFramework)' == 'net8.0'" />
     
     <!-- Legacy framework specific dependencies -->
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'netstandard2.0'" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'netstandard2.0'" />
     <PackageVersion Include="System.Threading.Channels" Version="8.0.0" Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'net471' Or '$(TargetFramework)' == 'netstandard2.0'" />
   </ItemGroup>
 
