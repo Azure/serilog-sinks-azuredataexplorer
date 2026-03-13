@@ -22,6 +22,14 @@
     <RepositoryUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</RepositoryUrl>
     <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
     <PackageReleaseNotes>
+      Version 2.0.2:
+      - Serilog 4.3.0 → 4.3.1
+      - Serilog.Sinks.Console 6.0.0 → 6.1.1
+      - Microsoft.Azure.Kusto.Ingest 14.0.3 → 14.1.0
+      - coverlet.collector 6.0.2 → 8.0.0
+      - Xunit.SkippableFact 1.4.13 → 1.5.61
+      - Added Copilot upgrade guidance (.github/copilot-instructions.md)
+
       Version 2.0.0:
       - Added multi-target framework support for .NET 6.0 and .NET 8.0
       - Updated dependencies and improved compatibility
@@ -37,9 +45,9 @@
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
-    <Version>2.0.1</Version>
-    <AssemblyVersion>2.0.1.0</AssemblyVersion>
-    <FileVersion>2.0.1.0</FileVersion>
+    <Version>2.0.2</Version>
+    <AssemblyVersion>2.0.2.0</AssemblyVersion>
+    <FileVersion>2.0.2.0</FileVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System" />
