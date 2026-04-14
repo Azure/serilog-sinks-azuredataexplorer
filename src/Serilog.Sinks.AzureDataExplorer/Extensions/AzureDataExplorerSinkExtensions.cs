@@ -169,21 +169,26 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             }
 
 
-            var batchingOptions = new BatchingOptions
+            if (string.IsNullOrWhiteSpace(bufferBaseFileName))
             {
-                BatchSizeLimit = options.BatchPostingLimit,
-                BufferingTimeLimit = options.Period,
-                EagerlyEmitFirstEvent = true,
-                QueueLimit = options.QueueSizeLimit
-            };
+                var batchingOptions = new BatchingOptions
+                {
+                    BatchSizeLimit = options.BatchPostingLimit,
+                    BufferingTimeLimit = options.Period,
+                    EagerlyEmitFirstEvent = true,
+                    QueueLimit = options.QueueSizeLimit
+                };
 
-
-            var azureDataExplorerSink = new AzureDataExplorerSink(options);
-
-            var sink = string.IsNullOrWhiteSpace(bufferBaseFileName) ? azureDataExplorerSink : (IBatchedLogEventSink) new AzureDataExplorerDurableSink(options);
-            return loggerConfiguration.Sink(sink, batchingOptions,
-                restrictedToMinimumLevel,
-                options.BufferFileLoggingLevelSwitch);
+                var azureDataExplorerSink = new AzureDataExplorerSink(options);
+                return loggerConfiguration.Sink(azureDataExplorerSink, batchingOptions,
+                    restrictedToMinimumLevel,
+                    options.BufferFileLoggingLevelSwitch);
+            }
+            else
+            {
+                var durableSink = new AzureDataExplorerDurableSink(options);
+                return loggerConfiguration.Sink(durableSink, restrictedToMinimumLevel);
+            }
         }
     }
 }
