@@ -22,6 +22,9 @@
     <RepositoryUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</RepositoryUrl>
     <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
     <PackageReleaseNotes>
+      Version 2.0.3:
+      - Microsoft.Azure.Kusto.Ingest 14.1.0 → 14.1.2
+
       Version 2.0.2:
       - Serilog 4.3.0 → 4.3.1
       - Serilog.Sinks.Console 6.0.0 → 6.1.1
@@ -45,9 +48,9 @@
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
-    <Version>2.0.2</Version>
-    <AssemblyVersion>2.0.2.0</AssemblyVersion>
-    <FileVersion>2.0.2.0</FileVersion>
+    <Version>2.0.3</Version>
+    <AssemblyVersion>2.0.3.0</AssemblyVersion>
+    <FileVersion>2.0.3.0</FileVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System" />
