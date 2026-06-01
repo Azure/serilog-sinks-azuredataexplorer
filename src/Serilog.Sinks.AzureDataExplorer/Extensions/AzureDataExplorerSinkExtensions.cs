@@ -129,13 +129,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                         "applicationClientId is required when isManagedIdentity is true. Use \"system\" for system-assigned managed identity, or the client id of the user-assigned managed identity.");
                 }
             }
-            else if (isWorkloadIdentity)
-            {
-            }
-            else if (!string.IsNullOrEmpty(userToken))
-            {
-            }
-            else
+            else if (!isWorkloadIdentity && string.IsNullOrEmpty(userToken))
             {
                 if (applicationClientId == null)
                 {
