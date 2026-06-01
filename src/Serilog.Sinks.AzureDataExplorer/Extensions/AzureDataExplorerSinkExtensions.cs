@@ -70,10 +70,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string ingestionUri,
             string databaseName,
             string tableName,
-            string applicationClientId,
-            string applicationSecret,
-            string tenantId,
-            string userToken = null, 
+            string applicationClientId = null,
+            string applicationSecret = null,
+            string tenantId = null,
+            string userToken = null,
             bool isManagedIdentity = false,
             bool isWorkloadIdentity = false,
             bool flushImmediately = true,
@@ -84,7 +84,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string bufferFileOutputFormat =
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
             bool useStreamingIngestion = false,
-            int batchPostingLimit = 1000, 
+            int batchPostingLimit = 1000,
             double period = 10,
             int queueSizeLimit = 100000,
 
@@ -110,19 +110,34 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 throw new ArgumentNullException(nameof(tableName));
             }
 
-            if (applicationClientId == null)
+            if (isManagedIdentity)
             {
-                throw new ArgumentNullException(nameof(applicationClientId));
+                if (applicationClientId == null)
+                {
+                    throw new ArgumentNullException(nameof(applicationClientId),
+                        "applicationClientId is required when isManagedIdentity is true. Use \"system\" for system-assigned managed identity, or the client id of the user-assigned managed identity.");
+                }
             }
-
-            if (applicationSecret == null)
+            else if (isWorkloadIdentity)
             {
-                throw new ArgumentNullException(nameof(applicationSecret));
             }
-
-            if (tenantId == null)
+            else if (!string.IsNullOrEmpty(userToken))
             {
-                throw new ArgumentNullException(nameof(tenantId));
+            }
+            else
+            {
+                if (applicationClientId == null)
+                {
+                    throw new ArgumentNullException(nameof(applicationClientId));
+                }
+                if (applicationSecret == null)
+                {
+                    throw new ArgumentNullException(nameof(applicationSecret));
+                }
+                if (tenantId == null)
+                {
+                    throw new ArgumentNullException(nameof(tenantId));
+                }
             }
 
             AzureDataExplorerSinkOptions options = new AzureDataExplorerSinkOptions()
@@ -168,22 +183,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 options = options.WithAadApplicationKey(applicationClientId: applicationClientId, applicationKey: applicationSecret, authority: tenantId);
             }
 
-
-            var batchingOptions = new BatchingOptions
-            {
-                BatchSizeLimit = options.BatchPostingLimit,
-                BufferingTimeLimit = options.Period,
-                EagerlyEmitFirstEvent = true,
-                QueueLimit = options.QueueSizeLimit
-            };
-
-
-            var azureDataExplorerSink = new AzureDataExplorerSink(options);
-
-            var sink = string.IsNullOrWhiteSpace(bufferBaseFileName) ? azureDataExplorerSink : (IBatchedLogEventSink) new AzureDataExplorerDurableSink(options);
-            return loggerConfiguration.Sink(sink, batchingOptions,
-                restrictedToMinimumLevel,
-                options.BufferFileLoggingLevelSwitch);
+            return loggerConfiguration.AzureDataExplorerSink(options, restrictedToMinimumLevel);
         }
     }
 }
