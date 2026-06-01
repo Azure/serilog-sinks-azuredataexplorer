@@ -80,15 +80,16 @@ public class AzureDataExplorerSinkExtensionsTests
                 IngestionEndpointUri = "http://ingestionUri",
                 BufferBaseFileName = Path.Combine(bufferDir, "buffer")
             };
-            var loggerConfiguration = new LoggerConfiguration();
 
-            var sinkConfiguration = loggerConfiguration.WriteTo.AzureDataExplorerSink(options);
+            using var logger = new LoggerConfiguration()
+                .WriteTo.AzureDataExplorerSink(options)
+                .CreateLogger();
 
-            Assert.NotNull(sinkConfiguration);
+            Assert.NotNull(logger);
         }
         finally
         {
-            try { Directory.Delete(bufferDir, recursive: true); } catch { }
+            Directory.Delete(bufferDir, recursive: true);
         }
     }
 
@@ -99,22 +100,22 @@ public class AzureDataExplorerSinkExtensionsTests
         Directory.CreateDirectory(bufferDir);
         try
         {
-            var loggerConfiguration = new LoggerConfiguration();
+            using var logger = new LoggerConfiguration()
+                .WriteTo.AzureDataExplorerSink(
+                    ingestionUri: "http://ingestionUri",
+                    databaseName: "mockDB",
+                    tableName: "mockTable",
+                    applicationClientId: "clientId",
+                    applicationSecret: "secret",
+                    tenantId: "tenantId",
+                    bufferBaseFileName: Path.Combine(bufferDir, "buffer"))
+                .CreateLogger();
 
-            var sinkConfiguration = loggerConfiguration.WriteTo.AzureDataExplorerSink(
-                ingestionUri: "http://ingestionUri",
-                databaseName: "mockDB",
-                tableName: "mockTable",
-                applicationClientId: "clientId",
-                applicationSecret: "secret",
-                tenantId: "tenantId",
-                bufferBaseFileName: Path.Combine(bufferDir, "buffer"));
-
-            Assert.NotNull(sinkConfiguration);
+            Assert.NotNull(logger);
         }
         finally
         {
-            try { Directory.Delete(bufferDir, recursive: true); } catch { }
+            Directory.Delete(bufferDir, recursive: true);
         }
     }
 
@@ -233,5 +234,26 @@ public class AzureDataExplorerSinkExtensionsTests
                 tableName: "mockTable",
                 applicationClientId: null,
                 isManagedIdentity: true));
+    }
+
+    [Theory]
+    [InlineData(true, true, null)]
+    [InlineData(true, false, "some-token")]
+    [InlineData(false, true, "some-token")]
+    [InlineData(true, true, "some-token")]
+    public void AzureDataExplorerSink_Rejects_Conflicting_Auth_Modes(
+        bool isManagedIdentity, bool isWorkloadIdentity, string? userToken)
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        Assert.Throws<ArgumentException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: "http://ingestionUri",
+                databaseName: "mockDB",
+                tableName: "mockTable",
+                applicationClientId: "clientId",
+                userToken: userToken,
+                isManagedIdentity: isManagedIdentity,
+                isWorkloadIdentity: isWorkloadIdentity));
     }
 }

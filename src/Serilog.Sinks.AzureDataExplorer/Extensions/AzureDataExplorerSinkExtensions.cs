@@ -110,6 +110,17 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 throw new ArgumentNullException(nameof(tableName));
             }
 
+            var explicitAuthModes =
+                (isManagedIdentity ? 1 : 0) +
+                (isWorkloadIdentity ? 1 : 0) +
+                (!string.IsNullOrEmpty(userToken) ? 1 : 0);
+
+            if (explicitAuthModes > 1)
+            {
+                throw new ArgumentException(
+                    "Only one authentication mode can be specified. Set at most one of isManagedIdentity, isWorkloadIdentity, or userToken.");
+            }
+
             if (isManagedIdentity)
             {
                 if (applicationClientId == null)
