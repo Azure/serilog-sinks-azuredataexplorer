@@ -70,10 +70,10 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string ingestionUri,
             string databaseName,
             string tableName,
-            string applicationClientId,
-            string applicationSecret,
-            string tenantId,
-            string userToken = null, 
+            string applicationClientId = null,
+            string applicationSecret = null,
+            string tenantId = null,
+            string userToken = null,
             bool isManagedIdentity = false,
             bool isWorkloadIdentity = false,
             bool flushImmediately = true,
@@ -84,7 +84,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             string bufferFileOutputFormat =
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
             bool useStreamingIngestion = false,
-            int batchPostingLimit = 1000, 
+            int batchPostingLimit = 1000,
             double period = 10,
             int queueSizeLimit = 100000,
 
@@ -95,34 +95,56 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 throw new ArgumentNullException(nameof(loggerConfiguration));
             }
-            if (ingestionUri == null)
+            if (string.IsNullOrWhiteSpace(ingestionUri))
             {
                 throw new ArgumentNullException(nameof(ingestionUri));
             }
 
-            if (databaseName == null)
+            if (string.IsNullOrWhiteSpace(databaseName))
             {
                 throw new ArgumentNullException(nameof(databaseName));
             }
 
-            if (tableName == null)
+            if (string.IsNullOrWhiteSpace(tableName))
             {
                 throw new ArgumentNullException(nameof(tableName));
             }
 
-            if (applicationClientId == null)
+            userToken = string.IsNullOrWhiteSpace(userToken) ? null : userToken;
+
+            var explicitAuthModes =
+                (isManagedIdentity ? 1 : 0) +
+                (isWorkloadIdentity ? 1 : 0) +
+                (userToken != null ? 1 : 0);
+
+            if (explicitAuthModes > 1)
             {
-                throw new ArgumentNullException(nameof(applicationClientId));
+                throw new ArgumentException(
+                    "Only one authentication mode can be specified. Set at most one of isManagedIdentity, isWorkloadIdentity, or userToken.");
             }
 
-            if (applicationSecret == null)
+            if (isManagedIdentity)
             {
-                throw new ArgumentNullException(nameof(applicationSecret));
+                if (string.IsNullOrWhiteSpace(applicationClientId))
+                {
+                    throw new ArgumentNullException(nameof(applicationClientId),
+                        "applicationClientId is required when isManagedIdentity is true. Use \"system\" for system-assigned managed identity, or the client id of the user-assigned managed identity.");
+                }
             }
-
-            if (tenantId == null)
+            else if (!isWorkloadIdentity && userToken == null)
             {
-                throw new ArgumentNullException(nameof(tenantId));
+                if (string.IsNullOrWhiteSpace(applicationClientId))
+                {
+                    throw new ArgumentNullException(nameof(applicationClientId));
+                }
+                if (string.IsNullOrWhiteSpace(applicationSecret))
+                {
+                    throw new ArgumentNullException(nameof(applicationSecret));
+                }
+                if (string.IsNullOrWhiteSpace(tenantId))
+                {
+                    throw new ArgumentNullException(nameof(tenantId));
+                }
             }
 
             AzureDataExplorerSinkOptions options = new AzureDataExplorerSinkOptions()
@@ -159,7 +181,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 options = options.WithWorkloadIdentity();
             }
-            else if (!string.IsNullOrEmpty(userToken))
+            else if (userToken != null)
             {
                 options = options.WithAadUserToken(userToken: userToken);
             }
@@ -168,22 +190,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 options = options.WithAadApplicationKey(applicationClientId: applicationClientId, applicationKey: applicationSecret, authority: tenantId);
             }
 
-
-            var batchingOptions = new BatchingOptions
-            {
-                BatchSizeLimit = options.BatchPostingLimit,
-                BufferingTimeLimit = options.Period,
-                EagerlyEmitFirstEvent = true,
-                QueueLimit = options.QueueSizeLimit
-            };
-
-
-            var azureDataExplorerSink = new AzureDataExplorerSink(options);
-
-            var sink = string.IsNullOrWhiteSpace(bufferBaseFileName) ? azureDataExplorerSink : (IBatchedLogEventSink) new AzureDataExplorerDurableSink(options);
-            return loggerConfiguration.Sink(sink, batchingOptions,
-                restrictedToMinimumLevel,
-                options.BufferFileLoggingLevelSwitch);
+            return loggerConfiguration.AzureDataExplorerSink(options, restrictedToMinimumLevel);
         }
     }
 }

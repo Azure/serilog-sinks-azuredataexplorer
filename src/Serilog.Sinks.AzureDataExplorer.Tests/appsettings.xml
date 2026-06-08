@@ -11,13 +11,10 @@
         <Args>
         <ingestionUri>%ingestionUri%</ingestionUri>
         <databaseName>%databaseName%</databaseName>
-        <tableName>na</tableName>
+        <tableName>%tableName%</tableName>
         <batchPostingLimit>10</batchPostingLimit>
         <period>2</period>
         <queueSizeLimit>1000</queueSizeLimit>
-        <applicationClientId>na</applicationClientId>
-        <applicationSecret>na</applicationSecret>
-        <tenantId>na</tenantId>
         </Args>
       </Args>
     </WriteTo>
