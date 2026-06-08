@@ -256,4 +256,37 @@ public class AzureDataExplorerSinkExtensionsTests
                 isManagedIdentity: isManagedIdentity,
                 isWorkloadIdentity: isWorkloadIdentity));
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    public void AzureDataExplorerSink_ManagedIdentity_Rejects_Whitespace_ApplicationClientId(string applicationClientId)
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: "http://ingestionUri",
+                databaseName: "mockDB",
+                tableName: "mockTable",
+                applicationClientId: applicationClientId,
+                isManagedIdentity: true));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    public void AzureDataExplorerSink_Whitespace_UserToken_Treated_As_No_Token(string userToken)
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: "http://ingestionUri",
+                databaseName: "mockDB",
+                tableName: "mockTable",
+                userToken: userToken));
+    }
 }

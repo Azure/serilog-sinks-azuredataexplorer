@@ -110,10 +110,12 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
                 throw new ArgumentNullException(nameof(tableName));
             }
 
+            userToken = string.IsNullOrWhiteSpace(userToken) ? null : userToken;
+
             var explicitAuthModes =
                 (isManagedIdentity ? 1 : 0) +
                 (isWorkloadIdentity ? 1 : 0) +
-                (!string.IsNullOrEmpty(userToken) ? 1 : 0);
+                (userToken != null ? 1 : 0);
 
             if (explicitAuthModes > 1)
             {
@@ -123,13 +125,13 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
 
             if (isManagedIdentity)
             {
-                if (applicationClientId == null)
+                if (string.IsNullOrWhiteSpace(applicationClientId))
                 {
                     throw new ArgumentNullException(nameof(applicationClientId),
                         "applicationClientId is required when isManagedIdentity is true. Use \"system\" for system-assigned managed identity, or the client id of the user-assigned managed identity.");
                 }
             }
-            else if (!isWorkloadIdentity && string.IsNullOrEmpty(userToken))
+            else if (!isWorkloadIdentity && userToken == null)
             {
                 if (applicationClientId == null)
                 {
@@ -179,7 +181,7 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 options = options.WithWorkloadIdentity();
             }
-            else if (!string.IsNullOrEmpty(userToken))
+            else if (userToken != null)
             {
                 options = options.WithAadUserToken(userToken: userToken);
             }
