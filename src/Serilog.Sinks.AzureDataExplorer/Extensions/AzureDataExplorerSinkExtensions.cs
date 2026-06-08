@@ -119,8 +119,16 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
 
             if (explicitAuthModes > 1)
             {
+                var setModes =
+                    (isManagedIdentity ? "isManagedIdentity, " : "") +
+                    (isWorkloadIdentity ? "isWorkloadIdentity, " : "") +
+                    (userToken != null ? "userToken, " : "");
+                setModes = setModes.TrimEnd(',', ' ');
+
                 throw new ArgumentException(
-                    "Only one authentication mode can be specified. Set at most one of isManagedIdentity, isWorkloadIdentity, or userToken.");
+                    "Only one authentication mode can be specified, but multiple were set: " + setModes + ". " +
+                    "Set at most one of isManagedIdentity, isWorkloadIdentity, or userToken. " +
+                    "If you upgraded from an earlier version, remove any leftover placeholder values such as a dummy userToken.");
             }
 
             if (isManagedIdentity)
@@ -135,15 +143,21 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 if (string.IsNullOrWhiteSpace(applicationClientId))
                 {
-                    throw new ArgumentNullException(nameof(applicationClientId));
+                    throw new ArgumentNullException(nameof(applicationClientId),
+                        "applicationClientId is required for Azure AD application key authentication (the default mode). " +
+                        "If you intended to use a different mode, set isManagedIdentity, isWorkloadIdentity, or userToken instead.");
                 }
                 if (string.IsNullOrWhiteSpace(applicationSecret))
                 {
-                    throw new ArgumentNullException(nameof(applicationSecret));
+                    throw new ArgumentNullException(nameof(applicationSecret),
+                        "applicationSecret is required for Azure AD application key authentication (the default mode). " +
+                        "If you intended to use a different mode, set isManagedIdentity, isWorkloadIdentity, or userToken instead.");
                 }
                 if (string.IsNullOrWhiteSpace(tenantId))
                 {
-                    throw new ArgumentNullException(nameof(tenantId));
+                    throw new ArgumentNullException(nameof(tenantId),
+                        "tenantId is required for Azure AD application key authentication (the default mode). " +
+                        "If you intended to use a different mode, set isManagedIdentity, isWorkloadIdentity, or userToken instead.");
                 }
             }
 

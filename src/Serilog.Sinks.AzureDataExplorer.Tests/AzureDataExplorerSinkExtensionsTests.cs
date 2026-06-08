@@ -337,4 +337,43 @@ public class AzureDataExplorerSinkExtensionsTests
 
         Assert.Equal(expectedParam, ex.ParamName);
     }
+
+    [Fact]
+    public void AzureDataExplorerSink_AadAppKey_Missing_Credential_Message_Explains_Alternatives()
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: "http://ingestionUri",
+                databaseName: "mockDB",
+                tableName: "mockTable",
+                applicationClientId: "clientId",
+                applicationSecret: null,
+                tenantId: "tenantId"));
+
+        Assert.Contains("application key authentication", ex.Message);
+        Assert.Contains("isManagedIdentity", ex.Message);
+        Assert.Contains("isWorkloadIdentity", ex.Message);
+        Assert.Contains("userToken", ex.Message);
+    }
+
+    [Fact]
+    public void AzureDataExplorerSink_Conflicting_Auth_Modes_Message_Lists_Detected_Modes()
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: "http://ingestionUri",
+                databaseName: "mockDB",
+                tableName: "mockTable",
+                applicationClientId: "clientId",
+                userToken: "some-token",
+                isManagedIdentity: true));
+
+        Assert.Contains("isManagedIdentity", ex.Message);
+        Assert.Contains("userToken", ex.Message);
+        Assert.Contains("multiple were set", ex.Message);
+    }
 }
