@@ -31,7 +31,7 @@ Key rules:
 
 ## Hardcoded Versions
 
-`src/Serilog.Sinks.AzureDataExplorer/Extensions/AzureDataExplorerSinkOptionsExtensions.cs` has `ClientVersion = "2.0.2"` — this must be updated manually when releasing new versions.
+`src/Serilog.Sinks.AzureDataExplorer/Extensions/AzureDataExplorerSinkOptionsExtensions.cs` has `ClientVersion = "2.0.4"` — this must be updated manually when releasing new versions.
 
 ## Build & Test
 
