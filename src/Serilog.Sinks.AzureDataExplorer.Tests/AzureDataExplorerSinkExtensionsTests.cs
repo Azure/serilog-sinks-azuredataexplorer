@@ -289,4 +289,52 @@ public class AzureDataExplorerSinkExtensionsTests
                 tableName: "mockTable",
                 userToken: userToken));
     }
+
+    [Theory]
+    [InlineData("ingestionUri", "", "mockDB", "mockTable")]
+    [InlineData("ingestionUri", " ", "mockDB", "mockTable")]
+    [InlineData("databaseName", "http://ingestionUri", "", "mockTable")]
+    [InlineData("databaseName", "http://ingestionUri", " ", "mockTable")]
+    [InlineData("tableName", "http://ingestionUri", "mockDB", "")]
+    [InlineData("tableName", "http://ingestionUri", "mockDB", " ")]
+    public void AzureDataExplorerSink_Rejects_Whitespace_Required_Strings(
+        string expectedParam, string ingestionUri, string databaseName, string tableName)
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: ingestionUri,
+                databaseName: databaseName,
+                tableName: tableName,
+                applicationClientId: "clientId",
+                applicationSecret: "secret",
+                tenantId: "tenantId"));
+
+        Assert.Equal(expectedParam, ex.ParamName);
+    }
+
+    [Theory]
+    [InlineData("applicationClientId", "", "secret", "tenantId")]
+    [InlineData("applicationClientId", " ", "secret", "tenantId")]
+    [InlineData("applicationSecret", "clientId", "", "tenantId")]
+    [InlineData("applicationSecret", "clientId", " ", "tenantId")]
+    [InlineData("tenantId", "clientId", "secret", "")]
+    [InlineData("tenantId", "clientId", "secret", " ")]
+    public void AzureDataExplorerSink_AadAppKey_Rejects_Whitespace_Credentials(
+        string expectedParam, string applicationClientId, string applicationSecret, string tenantId)
+    {
+        var loggerConfiguration = new LoggerConfiguration();
+
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            loggerConfiguration.WriteTo.AzureDataExplorerSink(
+                ingestionUri: "http://ingestionUri",
+                databaseName: "mockDB",
+                tableName: "mockTable",
+                applicationClientId: applicationClientId,
+                applicationSecret: applicationSecret,
+                tenantId: tenantId));
+
+        Assert.Equal(expectedParam, ex.ParamName);
+    }
 }

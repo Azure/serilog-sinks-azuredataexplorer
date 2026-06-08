@@ -95,17 +95,17 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             {
                 throw new ArgumentNullException(nameof(loggerConfiguration));
             }
-            if (ingestionUri == null)
+            if (string.IsNullOrWhiteSpace(ingestionUri))
             {
                 throw new ArgumentNullException(nameof(ingestionUri));
             }
 
-            if (databaseName == null)
+            if (string.IsNullOrWhiteSpace(databaseName))
             {
                 throw new ArgumentNullException(nameof(databaseName));
             }
 
-            if (tableName == null)
+            if (string.IsNullOrWhiteSpace(tableName))
             {
                 throw new ArgumentNullException(nameof(tableName));
             }
@@ -133,15 +133,15 @@ namespace Serilog.Sinks.AzureDataExplorer.Extensions
             }
             else if (!isWorkloadIdentity && userToken == null)
             {
-                if (applicationClientId == null)
+                if (string.IsNullOrWhiteSpace(applicationClientId))
                 {
                     throw new ArgumentNullException(nameof(applicationClientId));
                 }
-                if (applicationSecret == null)
+                if (string.IsNullOrWhiteSpace(applicationSecret))
                 {
                     throw new ArgumentNullException(nameof(applicationSecret));
                 }
-                if (tenantId == null)
+                if (string.IsNullOrWhiteSpace(tenantId))
                 {
                     throw new ArgumentNullException(nameof(tenantId));
                 }
