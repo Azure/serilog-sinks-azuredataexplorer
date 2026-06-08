@@ -242,11 +242,11 @@ Note that if none of the authentication options are provided, AzCliIdentity , fo
 When configuring the sink through `appsettings.json` or `appsettings.xml`, only the credentials required by the
 selected authentication mode need to be supplied:
 
-| Mode | Set | Required parameters |
-|------|-----|---------------------|
-| AAD application key (default) | — | `applicationClientId`, `applicationSecret`, `tenantId` |
-| Managed identity | `isManagedIdentity: true` | `applicationClientId` only — use `"system"` for a system-assigned identity, or the client id of a user-assigned identity |
-| Workload identity | `isWorkloadIdentity: true` | none |
-| User token | — | `userToken` only |
+| Mode | How to enable | Required parameters |
+|------|---------------|---------------------|
+| AAD application key (default) | none of the options below are set | `applicationClientId`, `applicationSecret`, `tenantId` |
+| Managed identity | set `isManagedIdentity: true` | `applicationClientId` only — use `"system"` for a system-assigned identity, or the client id of a user-assigned identity |
+| Workload identity | set `isWorkloadIdentity: true` | none |
+| User token | provide a non-empty `userToken` | `userToken` only |
 
 Setting more than one of `isManagedIdentity`, `isWorkloadIdentity`, or `userToken` throws an `ArgumentException`.
