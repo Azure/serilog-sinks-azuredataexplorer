@@ -22,6 +22,11 @@
     <RepositoryUrl>https://github.com/Azure/serilog-sinks-azuredataexplorer</RepositoryUrl>
     <PackageTags>serilog; serilog-sink; Azure Data Explorer; ADX; Kusto</PackageTags>
     <PackageReleaseNotes>
+      Version 2.0.4:
+      - Fixed InvalidCastException in durable mode when configuring the sink via the string/appsettings overload (#46)
+      - Fixed authentication validation so non-AAD-application-key modes (managed identity, workload identity, user token) no longer require unused applicationClientId/applicationSecret/tenantId values (#47)
+      - Conflicting authentication modes now fail fast with a clear ArgumentException
+
       Version 2.0.3:
       - Microsoft.Azure.Kusto.Ingest 14.1.0 → 14.1.2
 
@@ -48,9 +53,9 @@
     </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SignAssembly>True</SignAssembly>
-    <Version>2.0.3</Version>
-    <AssemblyVersion>2.0.3.0</AssemblyVersion>
-    <FileVersion>2.0.3.0</FileVersion>
+    <Version>2.0.4</Version>
+    <AssemblyVersion>2.0.4.0</AssemblyVersion>
+    <FileVersion>2.0.4.0</FileVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System" />
