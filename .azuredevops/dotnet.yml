@@ -15,7 +15,6 @@ jobs:
   displayName: Build and test
   timeoutInMinutes: 60
   strategy:
-    failFast: false
     matrix:
       net6:
         dotnetVersion: 6.0.x
