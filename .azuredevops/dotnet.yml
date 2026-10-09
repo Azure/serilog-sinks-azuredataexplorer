@@ -63,12 +63,12 @@ jobs:
         --results-directory "$(Agent.TempDirectory)/TestResults" \
         /p:TargetFrameworks=$(targetFramework) \
         /p:SuppressTfmSupportBuildWarnings=true
-    displayName: Run unit tests for fork pull request
-    condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'True'))
+    displayName: Run unit tests for pull request
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
 
   - task: AzureCLI@2
     displayName: Run unit and Kusto E2E tests
-    condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     inputs:
       azureSubscription: $(AZURE_SERVICE_CONNECTION)
       scriptType: bash
@@ -76,25 +76,15 @@ jobs:
       inlineScript: |
         set -euo pipefail
 
-        for attempt in 1 2 3; do
-          if timeout 15m dotnet test \
-            src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj \
-            --configuration Release \
-            --no-build \
-            --logger "trx;LogFileName=all-$(targetFramework).trx" \
-            --collect "XPlat Code Coverage" \
-            --results-directory "$(Agent.TempDirectory)/TestResults" \
-            /p:TargetFrameworks=$(targetFramework) \
-            /p:SuppressTfmSupportBuildWarnings=true; then
-            exit 0
-          fi
-
-          if [[ "${attempt}" -eq 3 ]]; then
-            exit 1
-          fi
-
-          echo "Test attempt ${attempt} failed; retrying."
-        done
+        timeout 15m dotnet test \
+          src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj \
+          --configuration Release \
+          --no-build \
+          --logger "trx;LogFileName=all-$(targetFramework).trx" \
+          --collect "XPlat Code Coverage" \
+          --results-directory "$(Agent.TempDirectory)/TestResults" \
+          /p:TargetFrameworks=$(targetFramework) \
+          /p:SuppressTfmSupportBuildWarnings=true
     env:
       ingestionURI: $(INGESTION_URI)
       databaseName: $(DATABASE_NAME)
