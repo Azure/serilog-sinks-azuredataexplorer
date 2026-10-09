@@ -1,5 +1,3 @@
-# Temporary Azure Pipelines bootstrap for .github/workflows/dotnet.yml
-
 trigger:
 - main
 
@@ -9,6 +7,106 @@ pr:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo "Hello from Azure Pipelines"
-  displayName: Hello world
+variables:
+- group: serilog-sinks-azuredataexplorer-e2e
+
+jobs:
+- job: BuildAndTest
+  displayName: Build and test
+  timeoutInMinutes: 60
+  strategy:
+    maxParallel: 1
+    matrix:
+      net6:
+        dotnetVersion: 6.0.x
+        targetFramework: net6.0
+      net8:
+        dotnetVersion: 8.0.x
+        targetFramework: net8.0
+      net9:
+        dotnetVersion: 9.0.x
+        targetFramework: net9.0
+  steps:
+  - checkout: self
+    clean: true
+
+  - task: UseDotNet@2
+    displayName: Use .NET $(dotnetVersion)
+    inputs:
+      packageType: sdk
+      version: $(dotnetVersion)
+
+  - script: >
+      dotnet restore src
+      /p:TargetFrameworks=$(targetFramework)
+      /p:SuppressTfmSupportBuildWarnings=true
+    displayName: Restore dependencies
+
+  - script: >
+      dotnet build src
+      --no-restore
+      --configuration Release
+      /p:TargetFrameworks=$(targetFramework)
+      /p:SuppressTfmSupportBuildWarnings=true
+    displayName: Build
+
+  - bash: |
+      set -euo pipefail
+
+      dotnet test \
+        src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj \
+        --configuration Release \
+        --no-build \
+        --filter "FullyQualifiedName!~E2E&FullyQualifiedName!~AppSettings" \
+        --logger "trx;LogFileName=unit-$(targetFramework).trx" \
+        --collect "XPlat Code Coverage" \
+        --results-directory "$(Agent.TempDirectory)/TestResults" \
+        /p:TargetFrameworks=$(targetFramework) \
+        /p:SuppressTfmSupportBuildWarnings=true
+    displayName: Run unit tests for fork pull request
+    condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'True'))
+
+  - task: AzureCLI@2
+    displayName: Run unit and Kusto E2E tests
+    condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
+    inputs:
+      azureSubscription: $(AZURE_SERVICE_CONNECTION)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+
+        timeout 15m dotnet test \
+          src/Serilog.Sinks.AzureDataExplorer.Tests/Serilog.Sinks.AzureDataExplorer.Tests.csproj \
+          --configuration Release \
+          --no-build \
+          --logger "trx;LogFileName=all-$(targetFramework).trx" \
+          --collect "XPlat Code Coverage" \
+          --results-directory "$(Agent.TempDirectory)/TestResults" \
+          /p:TargetFrameworks=$(targetFramework) \
+          /p:SuppressTfmSupportBuildWarnings=true
+    env:
+      ingestionURI: $(INGESTION_URI)
+      databaseName: $(DATABASE_NAME)
+
+  - task: PublishTestResults@2
+    displayName: Publish test results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: $(Agent.TempDirectory)/TestResults/*.trx
+      testRunTitle: Serilog $(targetFramework)
+      failTaskOnMissingResultsFile: true
+
+  - task: PublishCodeCoverageResults@2
+    displayName: Publish code coverage
+    condition: succeededOrFailed()
+    inputs:
+      summaryFileLocation: $(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish coverage artifact
+    condition: succeededOrFailed()
+    inputs:
+      targetPath: $(Agent.TempDirectory)/TestResults
+      artifact: coverage-$(targetFramework)-attempt-$(System.JobAttempt)
