@@ -63,12 +63,12 @@ jobs:
         --results-directory "$(Agent.TempDirectory)/TestResults" \
         /p:TargetFrameworks=$(targetFramework) \
         /p:SuppressTfmSupportBuildWarnings=true
-    displayName: Run unit tests for pull request
-    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+    displayName: Run unit tests for fork pull request
+    condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'True'))
 
   - task: AzureCLI@2
     displayName: Run unit and Kusto E2E tests
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
     inputs:
       azureSubscription: $(AZURE_SERVICE_CONNECTION)
       scriptType: bash
