@@ -15,6 +15,7 @@ jobs:
   displayName: Build and test
   timeoutInMinutes: 60
   strategy:
+    maxParallel: 1
     matrix:
       net6:
         dotnetVersion: 6.0.x
