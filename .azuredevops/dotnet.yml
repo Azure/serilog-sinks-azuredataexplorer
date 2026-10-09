@@ -118,4 +118,4 @@ jobs:
     condition: succeededOrFailed()
     inputs:
       targetPath: $(Agent.TempDirectory)/TestResults
-      artifact: coverage-$(targetFramework)
+      artifact: coverage-$(targetFramework)-attempt-$(System.JobAttempt)
